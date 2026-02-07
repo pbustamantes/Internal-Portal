@@ -70,9 +70,22 @@ export function Sidebar() {
       </nav>
 
       <div className="px-3 py-4 border-t border-gray-100">
-        <div className="px-3 py-2 mb-2">
-          <p className="text-sm font-medium text-gray-900">{user?.firstName} {user?.lastName}</p>
-          <p className="text-xs text-gray-500">{user?.email}</p>
+        <div className="flex items-center gap-3 px-3 py-2 mb-2">
+          {user?.profilePictureUrl ? (
+            <img
+              src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}${user.profilePictureUrl}`}
+              alt=""
+              className="w-9 h-9 rounded-full object-cover shrink-0"
+            />
+          ) : (
+            <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-semibold shrink-0">
+              {user ? `${user.firstName[0] || ''}${user.lastName[0] || ''}`.toUpperCase() : ''}
+            </div>
+          )}
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-gray-900 truncate">{user?.firstName} {user?.lastName}</p>
+            <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+          </div>
         </div>
         <button
           onClick={logout}
