@@ -3,6 +3,7 @@ using InternalPortal.Application.Common.Interfaces;
 using InternalPortal.Domain.Interfaces;
 using InternalPortal.Domain.ValueObjects;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace InternalPortal.Application.Features.Venues;
 
@@ -19,7 +20,8 @@ public class UpdateVenueCommandHandler : IRequestHandler<UpdateVenueCommand, Ven
 
     public async Task<VenueDto> Handle(UpdateVenueCommand request, CancellationToken cancellationToken)
     {
-        var venue = await _context.Venues.FindAsync(new object[] { request.Id }, cancellationToken)
+        var venue = await _context.Venues
+            .FirstOrDefaultAsync(v => v.Id == request.Id, cancellationToken)
             ?? throw new NotFoundException("Venue", request.Id);
 
         venue.Name = request.Name;

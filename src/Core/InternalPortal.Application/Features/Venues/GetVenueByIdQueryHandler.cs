@@ -1,6 +1,7 @@
 using InternalPortal.Application.Common.Exceptions;
 using InternalPortal.Application.Common.Interfaces;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace InternalPortal.Application.Features.Venues;
 
@@ -15,12 +16,15 @@ public class GetVenueByIdQueryHandler : IRequestHandler<GetVenueByIdQuery, Venue
 
     public async Task<VenueDto> Handle(GetVenueByIdQuery request, CancellationToken cancellationToken)
     {
-        var venue = await _context.Venues.FindAsync(new object[] { request.Id }, cancellationToken)
+        var venue = await _context.Venues
+            .Where(v => v.Id == request.Id)
+            .Select(v => new VenueDto(
+                v.Id, v.Name, v.Capacity,
+                v.Address.Street, v.Address.City, v.Address.State, v.Address.ZipCode,
+                v.Address.Building, v.Address.Room))
+            .FirstOrDefaultAsync(cancellationToken)
             ?? throw new NotFoundException("Venue", request.Id);
 
-        return new VenueDto(
-            venue.Id, venue.Name, venue.Capacity,
-            venue.Address.Street, venue.Address.City, venue.Address.State, venue.Address.ZipCode,
-            venue.Address.Building, venue.Address.Room);
+        return venue;
     }
 }
