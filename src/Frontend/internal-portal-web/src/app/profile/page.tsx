@@ -19,6 +19,8 @@ export default function ProfilePage() {
   const [form, setForm] = useState({ firstName: '', lastName: '', department: '' });
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [changingPassword, setChangingPassword] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -74,6 +76,29 @@ export default function ProfilePage() {
     }
   };
 
+  const updatePassword = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => setPasswordForm(f => ({ ...f, [field]: e.target.value }));
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast.error('New passwords do not match');
+      return;
+    }
+    setChangingPassword(true);
+    try {
+      await api.post('/auth/change-password', {
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword,
+      });
+      toast.success('Password changed successfully');
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    } catch {
+      toast.error('Failed to change password. Check your current password.');
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
   const initials = user ? `${user.firstName[0] || ''}${user.lastName[0] || ''}`.toUpperCase() : '';
   const pictureUrl = user?.profilePictureUrl ? `${API_BASE_URL}${user.profilePictureUrl}` : null;
 
@@ -115,7 +140,7 @@ export default function ProfilePage() {
                 <div className="flex gap-2 mt-3">
                   <Button
                     type="button"
-                    variant="outline"
+                    variant="secondary"
                     size="sm"
                     disabled={uploading}
                     onClick={() => fileInputRef.current?.click()}
@@ -125,7 +150,7 @@ export default function ProfilePage() {
                   {pictureUrl && (
                     <Button
                       type="button"
-                      variant="outline"
+                      variant="secondary"
                       size="sm"
                       disabled={uploading}
                       onClick={handleRemovePicture}
@@ -143,6 +168,20 @@ export default function ProfilePage() {
                 </div>
                 <Input label="Department" id="department" value={form.department} onChange={update('department')} />
                 <Button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save Changes'}</Button>
+              </form>
+            </CardContent>
+          </Card>
+
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle>Change Password</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleChangePassword} className="space-y-4">
+                <Input label="Current Password" id="currentPassword" type="password" value={passwordForm.currentPassword} onChange={updatePassword('currentPassword')} required />
+                <Input label="New Password" id="newPassword" type="password" value={passwordForm.newPassword} onChange={updatePassword('newPassword')} required />
+                <Input label="Confirm New Password" id="confirmPassword" type="password" value={passwordForm.confirmPassword} onChange={updatePassword('confirmPassword')} required />
+                <Button type="submit" disabled={changingPassword}>{changingPassword ? 'Changing...' : 'Change Password'}</Button>
               </form>
             </CardContent>
           </Card>
