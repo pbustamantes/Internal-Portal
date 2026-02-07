@@ -27,7 +27,6 @@ public class CreateRegistrationCommandHandler : IRequestHandler<CreateRegistrati
             ?? throw new NotFoundException("Event", request.EventId);
 
         var registration = evt.Register(userId);
-        await _eventRepository.UpdateAsync(evt, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return new RegistrationDto(registration.Id, userId, "", evt.Id, evt.Title, registration.Status.ToString(), registration.RegisteredAtUtc);

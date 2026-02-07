@@ -49,7 +49,6 @@ public class CreateRegistrationCommandHandlerTests
         result.EventId.Should().Be(evt.Id);
         result.EventTitle.Should().Be("Test Event");
         result.Status.Should().Be("Confirmed");
-        _eventRepo.Verify(r => r.UpdateAsync(evt, It.IsAny<CancellationToken>()), Times.Once);
         _unitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 

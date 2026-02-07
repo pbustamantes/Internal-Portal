@@ -41,7 +41,6 @@ public class Event : BaseEntity
 
         var registration = new Registration
         {
-            Id = Guid.NewGuid(),
             EventId = Id,
             UserId = userId,
             Status = isWaitlisted ? RegistrationStatus.Waitlisted : RegistrationStatus.Confirmed,

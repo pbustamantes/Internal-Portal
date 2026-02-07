@@ -31,7 +31,11 @@ public class RepositoryBase<T> : IRepository<T> where T : BaseEntity
 
     public Task UpdateAsync(T entity, CancellationToken cancellationToken = default)
     {
-        Context.Entry(entity).State = EntityState.Modified;
+        var entry = Context.Entry(entity);
+        if (entry.State == EntityState.Detached)
+        {
+            entry.State = EntityState.Modified;
+        }
         return Task.CompletedTask;
     }
 
