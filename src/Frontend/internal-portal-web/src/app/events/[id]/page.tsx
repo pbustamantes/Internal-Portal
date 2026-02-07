@@ -18,7 +18,7 @@ import { formatDateTime } from '@/lib/utils';
 import { toast } from 'sonner';
 import { MapPin, Clock, Users, Edit, Trash2 } from 'lucide-react';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 
 export default function EventDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);

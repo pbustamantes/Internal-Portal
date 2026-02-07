@@ -12,7 +12,7 @@ import { useAuth } from '@/lib/auth-context';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 
 export default function ProfilePage() {
   const { user, refreshUser } = useAuth();

@@ -73,7 +73,7 @@ export function Sidebar() {
         <div className="flex items-center gap-3 px-3 py-2 mb-2">
           {user?.profilePictureUrl ? (
             <img
-              src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}${user.profilePictureUrl}`}
+              src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}${user.profilePictureUrl}`}
               alt=""
               className="w-9 h-9 rounded-full object-cover shrink-0"
             />
