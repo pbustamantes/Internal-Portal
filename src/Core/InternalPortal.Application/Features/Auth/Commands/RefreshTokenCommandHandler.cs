@@ -59,6 +59,6 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, A
             accessToken,
             newRefreshToken.Token,
             DateTime.UtcNow.AddHours(1),
-            new UserDto(user.Id, user.Email, user.FirstName, user.LastName, user.Department, user.Role.ToString()));
+            new UserDto(user.Id, user.Email, user.FirstName, user.LastName, user.Department, user.Role.ToString(), user.ProfilePictureUrl));
     }
 }

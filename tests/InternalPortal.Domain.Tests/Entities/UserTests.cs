@@ -34,4 +34,19 @@ public class UserTests
         var user = User.Create("test@example.com", "hash", "John", "Doe");
         user.FullName.Should().Be("John Doe");
     }
+
+    [Fact]
+    public void ProfilePictureUrl_ShouldBeNullByDefault()
+    {
+        var user = User.Create("test@example.com", "hash", "John", "Doe");
+        user.ProfilePictureUrl.Should().BeNull();
+    }
+
+    [Fact]
+    public void ProfilePictureUrl_ShouldBeSettable()
+    {
+        var user = User.Create("test@example.com", "hash", "John", "Doe");
+        user.ProfilePictureUrl = "/uploads/profile-pictures/test.jpg";
+        user.ProfilePictureUrl.Should().Be("/uploads/profile-pictures/test.jpg");
+    }
 }

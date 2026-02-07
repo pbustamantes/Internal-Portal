@@ -12,4 +12,5 @@ public record UserDto(
     string FirstName,
     string LastName,
     string? Department,
-    string Role);
+    string Role,
+    string? ProfilePictureUrl = null);

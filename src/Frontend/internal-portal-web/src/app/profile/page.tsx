@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Header } from '@/components/layout/header';
 import { AuthGuard } from '@/components/layout/auth-guard';
@@ -12,10 +12,14 @@ import { useAuth } from '@/lib/auth-context';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+
 export default function ProfilePage() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [form, setForm] = useState({ firstName: '', lastName: '', department: '' });
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (user) setForm({ firstName: user.firstName, lastName: user.lastName, department: user.department || '' });
@@ -36,6 +40,43 @@ export default function ProfilePage() {
     }
   };
 
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      await api.post('/users/me/profile-picture', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      await refreshUser();
+      toast.success('Profile picture updated');
+    } catch {
+      toast.error('Failed to upload profile picture');
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleRemovePicture = async () => {
+    setUploading(true);
+    try {
+      await api.delete('/users/me/profile-picture');
+      await refreshUser();
+      toast.success('Profile picture removed');
+    } catch {
+      toast.error('Failed to remove profile picture');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const initials = user ? `${user.firstName[0] || ''}${user.lastName[0] || ''}`.toUpperCase() : '';
+  const pictureUrl = user?.profilePictureUrl ? `${API_BASE_URL}${user.profilePictureUrl}` : null;
+
   return (
     <AuthGuard>
       <Sidebar />
@@ -50,6 +91,50 @@ export default function ProfilePage() {
               </div>
             </CardHeader>
             <CardContent>
+              <div className="flex flex-col items-center mb-6">
+                <div className="relative">
+                  {pictureUrl ? (
+                    <img
+                      src={pictureUrl}
+                      alt="Profile"
+                      className="w-24 h-24 rounded-full object-cover border-2 border-gray-200"
+                    />
+                  ) : (
+                    <div className="w-24 h-24 rounded-full bg-blue-600 flex items-center justify-center text-white text-2xl font-semibold border-2 border-gray-200">
+                      {initials}
+                    </div>
+                  )}
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".jpg,.jpeg,.png,.gif,.webp"
+                  className="hidden"
+                  onChange={handleFileSelect}
+                />
+                <div className="flex gap-2 mt-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={uploading}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    {uploading ? 'Uploading...' : 'Change Photo'}
+                  </Button>
+                  {pictureUrl && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={uploading}
+                      onClick={handleRemovePicture}
+                    >
+                      Remove
+                    </Button>
+                  )}
+                </div>
+              </div>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <Input label="Email" value={user?.email || ''} disabled />
                 <div className="grid grid-cols-2 gap-4">

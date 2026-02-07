@@ -94,7 +94,7 @@ The frontend starts on [http://localhost:3000](http://localhost:3000).
 dotnet test
 ```
 
-Runs 40 tests across 4 test projects (Domain, Application, API, Integration).
+Runs 55 tests across 4 test projects (Domain, Application, API, Integration).
 
 ## Seed Data
 
@@ -246,6 +246,6 @@ The frontend API URL defaults to `http://localhost:5000` and can be overridden w
 
 - **153** C# source files across 5 backend projects
 - **28** TypeScript/React components across 16 routes
-- **40** automated tests (31 Domain + 4 Application + 2 API + 3 Integration)
+- **55** automated tests (33 Domain + 14 Application + 2 API + 6 Integration)
 - **7** domain entities with full EF Core configuration
 - **24** REST API endpoints across 6 controllers

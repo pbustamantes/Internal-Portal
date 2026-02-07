@@ -5,6 +5,7 @@ export interface User {
   lastName: string;
   department?: string;
   role: string;
+  profilePictureUrl?: string;
 }
 
 export interface AuthResponse {
