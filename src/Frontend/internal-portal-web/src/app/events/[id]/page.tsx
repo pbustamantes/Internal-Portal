@@ -36,6 +36,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
   if (!event) return null;
 
   const isOwner = user?.id === event.organizerId || user?.role === 'Admin';
+  const isRegistered = attendees?.some(a => a.userId === user?.id) ?? false;
 
   return (
     <AuthGuard>
@@ -55,7 +56,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
               </>
             )}
             {event.status === 'Published' && !isOwner && (
-              <Button onClick={() => registerForEvent.mutate(id, { onSuccess: () => toast.success('Registered!'), onError: () => toast.error('Registration failed') })}>Register for Event</Button>
+              <Button disabled={isRegistered} onClick={() => registerForEvent.mutate(id, { onSuccess: () => toast.success('Registered!'), onError: () => toast.error('Registration failed') })}>{isRegistered ? 'Already Registered' : 'Register for Event'}</Button>
             )}
           </div>
 
