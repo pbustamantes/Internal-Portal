@@ -39,7 +39,47 @@ src/
 
 ## Getting Started
 
-### 1. Start the Database
+### Option A: Docker Compose (Recommended)
+
+The quickest way to run the full backend (API + SQL Server):
+
+```bash
+docker compose up
+```
+
+This builds and starts both services:
+- **SQL Server** on port `1433`
+- **API** on port `5001` (waits for SQL Server to be healthy before starting)
+
+The API automatically runs migrations and seeds sample data on first launch.
+
+**Swagger UI:** [http://localhost:5001/swagger](http://localhost:5001/swagger)
+
+To run in the background:
+
+```bash
+docker compose up -d
+```
+
+To rebuild after code changes:
+
+```bash
+docker compose up --build
+```
+
+Then start the frontend separately:
+
+```bash
+cd src/Frontend/internal-portal-web
+npm install
+npm run dev
+```
+
+The frontend starts on [http://localhost:3000](http://localhost:3000).
+
+### Option B: Local Development
+
+#### 1. Start the Database
 
 ```bash
 docker compose up -d sqlserver
@@ -49,7 +89,7 @@ This starts a SQL Server 2022 container on port `1433` with:
 - **SA Password:** `YourStrong@Passw0rd`
 - **Database:** `InternalPortalDb` (created automatically on first run)
 
-### 2. Run Database Migrations
+#### 2. Run Database Migrations
 
 ```bash
 # Create the migration (already included in the repo under Persistence/Migrations)
@@ -68,17 +108,17 @@ This creates the following tables: `Users`, `Events`, `Registrations`, `Notifica
 
 > **Note:** If you skip this step, the API will automatically run migrations and seed data on first launch in Development mode (see step 3).
 
-### 3. Run the Backend API
+#### 3. Run the Backend API
 
 ```bash
 dotnet run --project src/Presentation/InternalPortal.API
 ```
 
-The API starts on `http://localhost:5000` (or the default Kestrel ports).
+The API starts on `http://localhost:5001` (or the default Kestrel ports).
 
-**Swagger UI:** [http://localhost:5000/swagger](http://localhost:5000/swagger)
+**Swagger UI:** [http://localhost:5001/swagger](http://localhost:5001/swagger)
 
-### 4. Run the Frontend
+#### 4. Run the Frontend
 
 ```bash
 cd src/Frontend/internal-portal-web
@@ -88,7 +128,7 @@ npm run dev
 
 The frontend starts on [http://localhost:3000](http://localhost:3000).
 
-### 5. Run Tests
+### Run Tests
 
 ```bash
 dotnet test
@@ -240,7 +280,7 @@ Key settings in `src/Presentation/InternalPortal.API/appsettings.json`:
 }
 ```
 
-The frontend API URL defaults to `http://localhost:5000` and can be overridden with the `NEXT_PUBLIC_API_URL` environment variable.
+The frontend API URL defaults to `http://localhost:5001` and can be overridden with the `NEXT_PUBLIC_API_URL` environment variable.
 
 ## Project Stats
 
