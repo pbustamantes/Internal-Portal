@@ -9,15 +9,18 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useCreateEvent } from '@/hooks/use-events';
+import { useVenues } from '@/hooks/use-venues';
 import { toast } from 'sonner';
 
 export default function CreateEventPage() {
   const router = useRouter();
   const createEvent = useCreateEvent();
+  const { data: venues } = useVenues();
   const [form, setForm] = useState({
     title: '', description: '', startUtc: '', endUtc: '',
     minAttendees: 0, maxAttendees: 50,
     street: '', city: '', state: '', zipCode: '', building: '', room: '',
+    venueId: '',
   });
 
   const update = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
@@ -31,6 +34,7 @@ export default function CreateEventPage() {
         minAttendees: Number(form.minAttendees),
         maxAttendees: Number(form.maxAttendees),
         recurrence: 0,
+        venueId: form.venueId || undefined,
       });
       toast.success('Event created!');
       router.push(`/events/${result.id}`);
@@ -64,6 +68,17 @@ export default function CreateEventPage() {
                 </div>
                 <div className="border-t pt-4">
                   <h3 className="text-sm font-medium text-gray-700 mb-3">Location (optional)</h3>
+                  <div className="mb-4">
+                    <label htmlFor="venueId" className="block text-sm font-medium text-gray-700 mb-1">Venue</label>
+                    <select id="venueId" value={form.venueId}
+                      onChange={e => setForm(f => ({ ...f, venueId: e.target.value }))}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                      <option value="">No venue</option>
+                      {venues?.map(v => (
+                        <option key={v.id} value={v.id}>{v.name} (capacity: {v.capacity})</option>
+                      ))}
+                    </select>
+                  </div>
                   <div className="grid grid-cols-2 gap-4">
                     <Input label="Street" id="street" value={form.street} onChange={update('street')} />
                     <Input label="City" id="city" value={form.city} onChange={update('city')} />

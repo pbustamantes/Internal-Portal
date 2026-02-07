@@ -31,6 +31,9 @@ Thumbs.db
 ## Docker
 docker-compose.override.yml
 
+## Uploads
+uploads/
+
 ## Misc
 *.log
 appsettings.Development.json

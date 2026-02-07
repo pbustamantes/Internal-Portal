@@ -140,6 +140,12 @@ export interface CreateEventForm {
   venueId?: string;
 }
 
+export interface Venue {
+  id: string;
+  name: string;
+  capacity: number;
+}
+
 export interface ErrorResponse {
   title: string;
   detail: string;
