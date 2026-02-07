@@ -17,7 +17,10 @@ public class GetVenuesQueryHandler : IRequestHandler<GetVenuesQuery, IReadOnlyLi
     {
         return await _context.Venues
             .OrderBy(v => v.Name)
-            .Select(v => new VenueDto(v.Id, v.Name, v.Capacity))
+            .Select(v => new VenueDto(
+                v.Id, v.Name, v.Capacity,
+                v.Address.Street, v.Address.City, v.Address.State, v.Address.ZipCode,
+                v.Address.Building, v.Address.Room))
             .ToListAsync(cancellationToken);
     }
 }

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { cn } from '@/lib/utils';
-import { Calendar, LayoutDashboard, Bell, User, Ticket, CalendarDays, Settings, BarChart3, Users, LogOut } from 'lucide-react';
+import { Calendar, LayoutDashboard, Bell, User, Ticket, CalendarDays, Settings, BarChart3, Users, MapPin, LogOut } from 'lucide-react';
 
 const mainNav = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -17,6 +17,7 @@ const mainNav = [
 
 const adminNav = [
   { href: '/admin/events', label: 'Manage Events', icon: Settings },
+  { href: '/admin/venues', label: 'Manage Venues', icon: MapPin },
   { href: '/admin/users', label: 'Manage Users', icon: Users },
   { href: '/admin/reports', label: 'Reports', icon: BarChart3 },
 ];

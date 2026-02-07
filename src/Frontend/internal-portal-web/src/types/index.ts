@@ -144,6 +144,23 @@ export interface Venue {
   id: string;
   name: string;
   capacity: number;
+  street: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  building?: string;
+  room?: string;
+}
+
+export interface CreateVenueForm {
+  name: string;
+  capacity: number;
+  street: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  building?: string;
+  room?: string;
 }
 
 export interface ErrorResponse {

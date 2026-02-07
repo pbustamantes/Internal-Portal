@@ -1,6 +1,8 @@
+using MediatR;
+
 namespace InternalPortal.Application.Features.Venues;
 
-public record VenueDto(
+public record UpdateVenueCommand(
     Guid Id,
     string Name,
     int Capacity,
@@ -9,4 +11,4 @@ public record VenueDto(
     string State,
     string ZipCode,
     string? Building,
-    string? Room);
+    string? Room) : IRequest<VenueDto>;

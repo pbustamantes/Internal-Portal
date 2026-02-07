@@ -1,7 +1,8 @@
+using MediatR;
+
 namespace InternalPortal.Application.Features.Venues;
 
-public record VenueDto(
-    Guid Id,
+public record CreateVenueCommand(
     string Name,
     int Capacity,
     string Street,
@@ -9,4 +10,4 @@ public record VenueDto(
     string State,
     string ZipCode,
     string? Building,
-    string? Room);
+    string? Room) : IRequest<VenueDto>;
