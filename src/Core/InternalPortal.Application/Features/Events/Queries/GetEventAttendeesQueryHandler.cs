@@ -29,6 +29,7 @@ public class GetEventAttendeesQueryHandler : IRequestHandler<GetEventAttendeesQu
             r.User?.Email ?? "",
             r.User?.Department,
             r.Status.ToString(),
-            r.RegisteredAtUtc)).ToList();
+            r.RegisteredAtUtc,
+            r.User?.ProfilePictureUrl)).ToList();
     }
 }

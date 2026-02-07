@@ -44,4 +44,5 @@ public record AttendeeDto(
     string Email,
     string? Department,
     string RegistrationStatus,
-    DateTime RegisteredAtUtc);
+    DateTime RegisteredAtUtc,
+    string? ProfilePictureUrl = null);

@@ -71,6 +71,7 @@ export interface Attendee {
   department?: string;
   registrationStatus: string;
   registeredAtUtc: string;
+  profilePictureUrl?: string;
 }
 
 export interface Registration {

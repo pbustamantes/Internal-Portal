@@ -18,6 +18,8 @@ import { formatDateTime } from '@/lib/utils';
 import { toast } from 'sonner';
 import { MapPin, Clock, Users, Edit, Trash2 } from 'lucide-react';
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+
 export default function EventDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
@@ -83,7 +85,18 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                       <TableBody>
                         {attendees?.map(a => (
                           <TableRow key={a.userId}>
-                            <TableCell className="font-medium">{a.fullName}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-3">
+                                {a.profilePictureUrl ? (
+                                  <img src={`${API_BASE_URL}${a.profilePictureUrl}`} alt="" className="w-8 h-8 rounded-full object-cover shrink-0" />
+                                ) : (
+                                  <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-semibold shrink-0">
+                                    {a.fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                                  </div>
+                                )}
+                                <span className="font-medium">{a.fullName}</span>
+                              </div>
+                            </TableCell>
                             <TableCell>{a.email}</TableCell>
                             <TableCell><Badge status={a.registrationStatus}>{a.registrationStatus}</Badge></TableCell>
                             <TableCell>{formatDateTime(a.registeredAtUtc)}</TableCell>
