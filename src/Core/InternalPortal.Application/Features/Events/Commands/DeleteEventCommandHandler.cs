@@ -24,6 +24,8 @@ public class DeleteEventCommandHandler : IRequestHandler<DeleteEventCommand, Uni
         var evt = await _eventRepository.GetByIdAsync(request.Id, cancellationToken)
             ?? throw new NotFoundException("Event", request.Id);
 
+        evt.EnsureModifiable();
+
         var userId = _currentUserService.UserId ?? throw new ForbiddenException();
         if (evt.OrganizerId != userId && _currentUserService.Role != UserRole.Admin.ToString())
             throw new ForbiddenException();

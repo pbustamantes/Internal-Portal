@@ -28,8 +28,33 @@ public class Event : BaseEntity
     private readonly List<Registration> _registrations = new();
     public IReadOnlyCollection<Registration> Registrations => _registrations.AsReadOnly();
 
+    public bool IsInPast => Schedule.EndUtc < DateTime.UtcNow;
+
+    public void Complete()
+    {
+        if (Status == EventStatus.Completed)
+            throw new DomainException("Event is already completed.");
+
+        if (Status == EventStatus.Cancelled)
+            throw new DomainException("Cannot complete a cancelled event.");
+
+        Status = EventStatus.Completed;
+    }
+
+    public void EnsureModifiable()
+    {
+        if (IsInPast)
+            throw new DomainException("Past events cannot be modified.");
+
+        if (Status == EventStatus.Completed)
+            throw new DomainException("Completed events cannot be modified.");
+    }
+
     public Registration Register(Guid userId)
     {
+        if (IsInPast)
+            throw new DomainException("Cannot register for past events.");
+
         if (Status != EventStatus.Published)
             throw new DomainException("Can only register for published events.");
 
@@ -56,6 +81,9 @@ public class Event : BaseEntity
 
     public void Publish()
     {
+        if (IsInPast)
+            throw new DomainException("Past events cannot be published.");
+
         if (Status != EventStatus.Draft)
             throw new DomainException("Only draft events can be published.");
 
@@ -65,6 +93,9 @@ public class Event : BaseEntity
 
     public void Cancel()
     {
+        if (IsInPast)
+            throw new DomainException("Past events cannot be cancelled.");
+
         if (Status == EventStatus.Cancelled)
             throw new DomainException("Event is already cancelled.");
 

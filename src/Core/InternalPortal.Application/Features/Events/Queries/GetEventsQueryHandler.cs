@@ -9,16 +9,26 @@ namespace InternalPortal.Application.Features.Events.Queries;
 public class GetEventsQueryHandler : IRequestHandler<GetEventsQuery, PaginatedList<EventSummaryDto>>
 {
     private readonly IEventRepository _eventRepository;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public GetEventsQueryHandler(IEventRepository eventRepository)
+    public GetEventsQueryHandler(IEventRepository eventRepository, IUnitOfWork unitOfWork)
     {
         _eventRepository = eventRepository;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<PaginatedList<EventSummaryDto>> Handle(GetEventsQuery request, CancellationToken cancellationToken)
     {
         var (items, totalCount) = await _eventRepository.GetPagedAsync(
             request.Page, request.PageSize, request.Search, request.CategoryId, cancellationToken);
+
+        var pastPublished = items.Where(e => e.Status == EventStatus.Published && e.IsInPast).ToList();
+        if (pastPublished.Count > 0)
+        {
+            foreach (var e in pastPublished)
+                e.Complete();
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
 
         var dtos = items.Select(e => new EventSummaryDto(
             e.Id, e.Title,

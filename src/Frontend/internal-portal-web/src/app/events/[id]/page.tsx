@@ -37,6 +37,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
 
   const isOwner = user?.id === event.organizerId || user?.role === 'Admin';
   const isRegistered = attendees?.some(a => a.userId === user?.id) ?? false;
+  const isPast = event.status === 'Completed' || new Date(event.endUtc) < new Date();
 
   return (
     <AuthGuard>
@@ -45,17 +46,17 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
         <Header title={event.title} />
         <main className="p-8">
           <div className="flex gap-3 mb-6">
-            {isOwner && event.status === 'Draft' && (
+            {isOwner && event.status === 'Draft' && !isPast && (
               <Button onClick={() => publishEvent.mutate(id, { onSuccess: () => toast.success('Event published') })}>Publish</Button>
             )}
-            {isOwner && event.status !== 'Cancelled' && (
+            {isOwner && event.status !== 'Cancelled' && !isPast && (
               <>
                 <Link href={`/events/${id}/edit`}><Button variant="secondary"><Edit className="w-4 h-4 mr-2" /> Edit</Button></Link>
                 <Button variant="danger" onClick={() => cancelEvent.mutate(id, { onSuccess: () => toast.success('Event cancelled') })}>Cancel Event</Button>
                 <Button variant="ghost" onClick={() => deleteEvent.mutate(id, { onSuccess: () => { toast.success('Event deleted'); router.push('/events'); } })}><Trash2 className="w-4 h-4" /></Button>
               </>
             )}
-            {event.status === 'Published' && !isOwner && (
+            {event.status === 'Published' && !isOwner && !isPast && (
               <Button disabled={isRegistered} onClick={() => registerForEvent.mutate(id, { onSuccess: () => toast.success('Registered!'), onError: () => toast.error('Registration failed') })}>{isRegistered ? 'Already Registered' : 'Register for Event'}</Button>
             )}
           </div>

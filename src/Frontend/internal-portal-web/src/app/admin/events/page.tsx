@@ -43,8 +43,12 @@ export default function AdminEventsPage() {
                         <TableCell>{event.currentAttendees}/{event.maxAttendees}</TableCell>
                         <TableCell>{event.organizerName}</TableCell>
                         <TableCell className="flex gap-1">
-                          <Link href={`/events/${event.id}/edit`}><Button variant="ghost" size="sm"><Edit className="w-4 h-4" /></Button></Link>
-                          <Button variant="ghost" size="sm" onClick={() => deleteEvent.mutate(event.id, { onSuccess: () => toast.success('Event deleted') })}><Trash2 className="w-4 h-4 text-red-500" /></Button>
+                          {event.status !== 'Completed' && (
+                            <>
+                              <Link href={`/events/${event.id}/edit`}><Button variant="ghost" size="sm"><Edit className="w-4 h-4" /></Button></Link>
+                              <Button variant="ghost" size="sm" onClick={() => deleteEvent.mutate(event.id, { onSuccess: () => toast.success('Event deleted') })}><Trash2 className="w-4 h-4 text-red-500" /></Button>
+                            </>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}

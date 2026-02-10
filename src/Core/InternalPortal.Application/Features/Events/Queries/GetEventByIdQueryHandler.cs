@@ -9,16 +9,24 @@ namespace InternalPortal.Application.Features.Events.Queries;
 public class GetEventByIdQueryHandler : IRequestHandler<GetEventByIdQuery, EventDto>
 {
     private readonly IEventRepository _eventRepository;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public GetEventByIdQueryHandler(IEventRepository eventRepository)
+    public GetEventByIdQueryHandler(IEventRepository eventRepository, IUnitOfWork unitOfWork)
     {
         _eventRepository = eventRepository;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<EventDto> Handle(GetEventByIdQuery request, CancellationToken cancellationToken)
     {
         var evt = await _eventRepository.GetByIdWithDetailsAsync(request.Id, cancellationToken)
             ?? throw new NotFoundException("Event", request.Id);
+
+        if (evt.Status == EventStatus.Published && evt.IsInPast)
+        {
+            evt.Complete();
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
 
         var attendees = evt.Registrations.Count(r => r.Status == RegistrationStatus.Confirmed);
 
