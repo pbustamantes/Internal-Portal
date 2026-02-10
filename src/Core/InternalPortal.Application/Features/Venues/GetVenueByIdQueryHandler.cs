@@ -17,14 +17,13 @@ public class GetVenueByIdQueryHandler : IRequestHandler<GetVenueByIdQuery, Venue
     public async Task<VenueDto> Handle(GetVenueByIdQuery request, CancellationToken cancellationToken)
     {
         var venue = await _context.Venues
-            .Where(v => v.Id == request.Id)
-            .Select(v => new VenueDto(
-                v.Id, v.Name, v.Capacity,
-                v.Address.Street, v.Address.City, v.Address.State, v.Address.ZipCode,
-                v.Address.Building, v.Address.Room))
-            .FirstOrDefaultAsync(cancellationToken)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(v => v.Id == request.Id, cancellationToken)
             ?? throw new NotFoundException("Venue", request.Id);
 
-        return venue;
+        return new VenueDto(
+            venue.Id, venue.Name, venue.Capacity,
+            venue.Address.Street, venue.Address.City, venue.Address.State, venue.Address.ZipCode,
+            venue.Address.Building, venue.Address.Room);
     }
 }
