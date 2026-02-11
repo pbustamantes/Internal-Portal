@@ -41,18 +41,20 @@ src/
 
 ### Option A: Docker Compose (Recommended)
 
-The quickest way to run the full backend (API + SQL Server):
+The quickest way to run the full stack:
 
 ```bash
 docker compose up
 ```
 
-This builds and starts both services:
+This builds and starts all three services:
 - **SQL Server** on port `1433`
 - **API** on port `5001` (waits for SQL Server to be healthy before starting)
+- **Frontend** on port `3000` (waits for API)
 
-The API automatically runs migrations and seeds sample data on first launch.
+The API automatically runs migrations and seeds sample data on first launch. The frontend is built with `NEXT_PUBLIC_API_URL=http://localhost:5001` so browser API calls reach the exposed API port.
 
+**App:** [http://localhost:3000](http://localhost:3000)
 **Swagger UI:** [http://localhost:5001/swagger](http://localhost:5001/swagger)
 
 To run in the background:
@@ -66,16 +68,6 @@ To rebuild after code changes:
 ```bash
 docker compose up --build
 ```
-
-Then start the frontend separately:
-
-```bash
-cd src/Frontend/internal-portal-web
-npm install
-npm run dev
-```
-
-The frontend starts on [http://localhost:3000](http://localhost:3000).
 
 ### Option B: Local Development
 

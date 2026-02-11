@@ -18,10 +18,12 @@ Use **Docker** with a **multi-stage Dockerfile** and **Docker Compose** for orch
 ### Docker Compose
 - **sqlserver** — SQL Server 2022 with health checks (sqlcmd ping every 10s, 10 retries, 30s start period)
 - **api** — Depends on sqlserver with `condition: service_healthy` to prevent startup before database is ready
+- **web** — Next.js frontend, depends on api, built with `NEXT_PUBLIC_API_URL=http://localhost:5001` so browser API calls reach the exposed API port
 - **Volumes** — `sqlserver-data` for database persistence, `api-uploads` for profile pictures
 - **Environment** — `ASPNETCORE_ENVIRONMENT=Development` for local development with seed data
 
-### Frontend
+### Frontend Dockerfile
+- Multi-stage build: **deps** (npm ci) → **build** (next build with `NEXT_PUBLIC_API_URL` build arg) → **runtime** (standalone Node.js server on port 3000)
 - Next.js configured with `output: "standalone"` for optimized Docker builds (self-contained Node.js server without `node_modules`)
 
 ## Alternatives Considered
@@ -34,7 +36,7 @@ Use **Docker** with a **multi-stage Dockerfile** and **Docker Compose** for orch
 ## Consequences
 
 **Benefits:**
-- `docker compose up` runs the entire backend stack in one command
+- `docker compose up` runs the entire stack (database, API, frontend) in one command
 - Health checks prevent race conditions between API and database startup
 - Multi-stage build produces a minimal runtime image (~200MB vs ~800MB with SDK)
 - Persistent volumes survive container restarts
