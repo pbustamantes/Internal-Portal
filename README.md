@@ -294,6 +294,7 @@ Detailed technical documentation is available in the [`docs/`](docs/) directory:
 | [Sequence Diagrams](docs/sequence-diagrams.md) | 12 sequence diagrams tracing the main user flows — auth, event lifecycle (create → publish → register → complete), cancellation, error handling, and SignalR notifications |
 | [Deployment Guide](docs/deployment-guide.md) | Docker Compose, production Docker builds, manual deployment, database migrations, Nginx reverse proxy config, CORS, security checklist, and troubleshooting |
 | [Frontend Architecture](docs/frontend-architecture.md) | Next.js app structure, provider hierarchy, auth flow, API client with interceptors, React Query hooks, Zustand store, SignalR integration, component library, and routing |
+| [Architecture Decision Records](docs/adrs/) | 12 ADRs documenting key decisions — Onion Architecture, CQRS/MediatR, JWT auth, EF Core, SignalR, Next.js, React Query, FluentValidation, domain events, error handling, Docker, Tailwind CSS |
 
 All diagrams use [Mermaid](https://mermaid.js.org/) syntax and render natively on GitHub.
 
