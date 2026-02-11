@@ -292,6 +292,8 @@ Detailed technical documentation is available in the [`docs/`](docs/) directory:
 | [Database Diagram](docs/database-diagram.md) | ER diagram with all 7 tables, column types, constraints, foreign keys, and a relationship flowchart showing delete behaviors |
 | [Class Diagrams](docs/class-diagrams.md) | 13 Mermaid class diagrams covering entities, value objects, repository interfaces, CQRS handlers, DTOs, persistence, infrastructure services, controllers, and architecture overview |
 | [Sequence Diagrams](docs/sequence-diagrams.md) | 12 sequence diagrams tracing the main user flows — auth, event lifecycle (create → publish → register → complete), cancellation, error handling, and SignalR notifications |
+| [Deployment Guide](docs/deployment-guide.md) | Docker Compose, production Docker builds, manual deployment, database migrations, Nginx reverse proxy config, CORS, security checklist, and troubleshooting |
+| [Frontend Architecture](docs/frontend-architecture.md) | Next.js app structure, provider hierarchy, auth flow, API client with interceptors, React Query hooks, Zustand store, SignalR integration, component library, and routing |
 
 All diagrams use [Mermaid](https://mermaid.js.org/) syntax and render natively on GitHub.
 
