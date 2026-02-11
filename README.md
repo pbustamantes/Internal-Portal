@@ -282,6 +282,19 @@ Key settings in `src/Presentation/InternalPortal.API/appsettings.json`:
 
 The frontend API URL defaults to `http://localhost:5001` and can be overridden with the `NEXT_PUBLIC_API_URL` environment variable.
 
+## Documentation
+
+Detailed technical documentation is available in the [`docs/`](docs/) directory:
+
+| Document | Description |
+|----------|-------------|
+| [API Reference](docs/api-reference.md) | Complete reference for all 28 REST endpoints — request/response schemas, validation rules, auth requirements, error handling, SignalR hub, and enums |
+| [Database Diagram](docs/database-diagram.md) | ER diagram with all 7 tables, column types, constraints, foreign keys, and a relationship flowchart showing delete behaviors |
+| [Class Diagrams](docs/class-diagrams.md) | 13 Mermaid class diagrams covering entities, value objects, repository interfaces, CQRS handlers, DTOs, persistence, infrastructure services, controllers, and architecture overview |
+| [Sequence Diagrams](docs/sequence-diagrams.md) | 12 sequence diagrams tracing the main user flows — auth, event lifecycle (create → publish → register → complete), cancellation, error handling, and SignalR notifications |
+
+All diagrams use [Mermaid](https://mermaid.js.org/) syntax and render natively on GitHub.
+
 ## Project Stats
 
 - **153** C# source files across 5 backend projects
