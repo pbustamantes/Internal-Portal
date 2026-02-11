@@ -76,8 +76,9 @@ This starts:
 |---|---|---|
 | `sqlserver` | 1433 | SQL Server 2022 with health checks |
 | `api` | 5001 | ASP.NET Core API (waits for SQL Server) |
+| `web` | 3000 | Next.js frontend (waits for API) |
 
-The API automatically runs migrations and seeds sample data on first launch.
+The API automatically runs migrations and seeds sample data on first launch. The frontend is built with `NEXT_PUBLIC_API_URL=http://localhost:5001` so browser API calls go to the exposed API port.
 
 ### Docker Compose Services
 
@@ -107,6 +108,14 @@ services:
       ConnectionStrings__DefaultConnection: "Server=sqlserver;..."
     volumes:
       - uploads:/app/uploads  # Persistent profile picture storage
+
+  web:
+    build:
+      context: src/Frontend/internal-portal-web
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:5001
+    ports: ["3000:3000"]
+    depends_on: [api]
 ```
 
 ### Useful Commands
