@@ -59,6 +59,7 @@ Domain (innermost) → Application → Persistence/Infrastructure → API (outer
 - **Entity factory methods**: `User.Create(...)`, `Event.Create(...)` — not public constructors
 - **Domain events**: Added to entity's `DomainEvents` collection, dispatched after `SaveChangesAsync`
 - **Validation**: FluentValidation validators per command, auto-registered via assembly scan, run in `ValidationBehavior` pipeline
+- **Password requirements**: Enforced on register, reset-password, and change-password via shared `MustBeStrongPassword()` extension (`Common/Validation/PasswordRules.cs`). Rules: 8–128 characters, at least one uppercase letter, one lowercase letter, one digit. Frontend mirrors these rules in `lib/password-validation.ts` with real-time feedback via `<PasswordRequirements>` component. Login does **not** validate password format.
 - **Custom exceptions**: `NotFoundException`, `ForbiddenException`, `DomainException`, `ValidationException` — caught by `ExceptionHandlingMiddleware`
 - **CORS**: Allows `http://localhost:3000` — configured in `Program.cs`
 - **SignalR auth**: JWT passed via `?access_token=` query parameter
