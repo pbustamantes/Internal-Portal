@@ -1,0 +1,7 @@
+[
+  { "name": "Workshop", "description": "Hands-on learning sessions", "colorHex": "#3B82F6" },
+  { "name": "Social", "description": "Team building and social events", "colorHex": "#10B981" },
+  { "name": "Training", "description": "Professional development", "colorHex": "#F59E0B" },
+  { "name": "Meeting", "description": "Company meetings", "colorHex": "#6366F1" },
+  { "name": "Conference", "description": "Internal conferences", "colorHex": "#EC4899" }
+]

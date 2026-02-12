@@ -1,0 +1,17 @@
+[
+  {
+    "name": "Main Auditorium",
+    "capacity": 500,
+    "address": { "street": "100 Main St", "city": "Austin", "state": "TX", "zipCode": "78701", "building": "HQ", "room": "Auditorium" }
+  },
+  {
+    "name": "Conference Room A",
+    "capacity": 30,
+    "address": { "street": "100 Main St", "city": "Austin", "state": "TX", "zipCode": "78701", "building": "HQ", "room": "Room A" }
+  },
+  {
+    "name": "Training Lab",
+    "capacity": 20,
+    "address": { "street": "100 Main St", "city": "Austin", "state": "TX", "zipCode": "78701", "building": "HQ", "room": "Lab 1" }
+  }
+]

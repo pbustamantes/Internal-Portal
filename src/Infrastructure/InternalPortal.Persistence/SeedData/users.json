@@ -1,0 +1,26 @@
+[
+  {
+    "email": "admin@company.com",
+    "passwordHash": "$2a$11$K5mXjQh3GDjIF/EkzLc7xeJFCN5VBgq.oRPr3Wm8dFRVqESvKfKR.",
+    "firstName": "Admin",
+    "lastName": "User",
+    "department": "IT",
+    "role": "Admin"
+  },
+  {
+    "email": "organizer@company.com",
+    "passwordHash": "$2a$11$K5mXjQh3GDjIF/EkzLc7xeJFCN5VBgq.oRPr3Wm8dFRVqESvKfKR.",
+    "firstName": "Event",
+    "lastName": "Organizer",
+    "department": "HR",
+    "role": "Organizer"
+  },
+  {
+    "email": "employee@company.com",
+    "passwordHash": "$2a$11$K5mXjQh3GDjIF/EkzLc7xeJFCN5VBgq.oRPr3Wm8dFRVqESvKfKR.",
+    "firstName": "John",
+    "lastName": "Employee",
+    "department": "Engineering",
+    "role": "Employee"
+  }
+]
