@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import axios from 'axios';
 import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,11 +15,13 @@ import { toast } from 'sonner';
 export default function RegisterPage() {
   const [form, setForm] = useState({ email: '', password: '', firstName: '', lastName: '', department: '' });
   const [isLoading, setIsLoading] = useState(false);
+  const [emailExists, setEmailExists] = useState(false);
   const { register } = useAuth();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setEmailExists(false);
     const passwordError = validatePassword(form.password);
     if (passwordError) {
       toast.error(`Password requirement not met: ${passwordError}`);
@@ -28,8 +31,12 @@ export default function RegisterPage() {
     try {
       await register(form.email, form.password, form.firstName, form.lastName, form.department || undefined);
       router.push('/dashboard');
-    } catch {
-      toast.error('Registration failed. Please try again.');
+    } catch (err) {
+      if (axios.isAxiosError(err) && err.response?.data?.detail?.toLowerCase().includes('already registered')) {
+        setEmailExists(true);
+      } else {
+        toast.error('Registration failed. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -50,7 +57,14 @@ export default function RegisterPage() {
               <Input label="First Name" id="firstName" value={form.firstName} onChange={update('firstName')} required />
               <Input label="Last Name" id="lastName" value={form.lastName} onChange={update('lastName')} required />
             </div>
-            <Input label="Email" id="email" type="email" value={form.email} onChange={update('email')} required />
+            <div>
+              <Input label="Email" id="email" type="email" value={form.email} onChange={update('email')} required />
+              {emailExists && (
+                <p className="text-red-600 text-sm mt-1">
+                  This email is already registered. <Link href="/forgot-password" className="text-blue-600 hover:underline">Forgot your password?</Link>
+                </p>
+              )}
+            </div>
             <div>
               <Input label="Password" id="password" type="password" value={form.password} onChange={update('password')} required />
               <PasswordRequirements password={form.password} />
