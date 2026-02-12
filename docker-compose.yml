@@ -16,6 +16,13 @@ services:
       retries: 10
       start_period: 30s
 
+  mailpit:
+    image: axllent/mailpit
+    container_name: internal-portal-mailpit
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+
   api:
     build:
       context: .
@@ -26,6 +33,8 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=InternalPortalDb;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True
+      - Smtp__Host=mailpit
+      - Smtp__Port=1025
     depends_on:
       sqlserver:
         condition: service_healthy

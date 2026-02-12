@@ -47,15 +47,17 @@ The quickest way to run the full stack:
 docker compose up
 ```
 
-This builds and starts all three services:
+This builds and starts all four services:
 - **SQL Server** on port `1433`
 - **API** on port `5001` (waits for SQL Server to be healthy before starting)
 - **Frontend** on port `3000` (waits for API)
+- **Mailpit** — SMTP on port `1025`, web UI on port `8025`
 
 The API automatically runs migrations and seeds sample data on first launch. The frontend is built with `NEXT_PUBLIC_API_URL=http://localhost:5001` so browser API calls reach the exposed API port.
 
 **App:** [http://localhost:3000](http://localhost:3000)
 **Swagger UI:** [http://localhost:5001/swagger](http://localhost:5001/swagger)
+**Mailpit UI:** [http://localhost:8025](http://localhost:8025)
 
 To run in the background:
 
@@ -190,6 +192,8 @@ dotnet run --project src/Presentation/InternalPortal.API
 | POST | `/api/auth/login` | No | Login, returns JWT + refresh token |
 | POST | `/api/auth/refresh` | No | Refresh access token (token rotation) |
 | POST | `/api/auth/revoke` | Yes | Revoke refresh token (logout) |
+| POST | `/api/auth/forgot-password` | No | Send password reset email |
+| POST | `/api/auth/reset-password` | No | Reset password with token |
 | POST | `/api/auth/change-password` | Yes | Change password |
 
 ### Events
@@ -250,6 +254,37 @@ dotnet run --project src/Presentation/InternalPortal.API
 | `/admin/users` | Admin user management |
 | `/admin/reports` | Attendance and popularity reports |
 
+## Email (Mailpit)
+
+The application sends real emails (e.g. password reset links) via SMTP. In development, [Mailpit](https://mailpit.axllent.org/) acts as a local catch-all mail server — it accepts all outgoing emails and lets you view them in a web UI. No emails ever leave your machine.
+
+### Viewing Emails
+
+1. Start the stack with `docker compose up`
+2. Trigger an email — for example, use the "Forgot Password" flow on the login page
+3. Open **[http://localhost:8025](http://localhost:8025)** in your browser
+4. All emails sent by the API appear in the Mailpit inbox, where you can view the full HTML content, click links (e.g. password reset), and inspect headers
+
+### Running Mailpit Standalone
+
+If you're running the API locally (not in Docker), you can start just Mailpit:
+
+```bash
+docker compose up -d mailpit
+```
+
+The API defaults to `localhost:1025` for SMTP (configured in `appsettings.json` under `Smtp`), so emails will be captured by Mailpit automatically.
+
+### SMTP Configuration
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `Smtp:Host` | `localhost` | SMTP server hostname (`mailpit` in Docker Compose) |
+| `Smtp:Port` | `1025` | SMTP server port |
+| `Smtp:From` | `noreply@internalportal.local` | Sender address for outgoing emails |
+
+These can be overridden via environment variables (e.g. `Smtp__Host=mailpit`).
+
 ## Real-Time Notifications
 
 The app uses **SignalR** for real-time push notifications. The hub is at `/hubs/notifications` and requires JWT authentication (passed via query string). Events like new event published, event cancelled, and registration updates trigger notifications to relevant users.
@@ -268,6 +303,11 @@ Key settings in `src/Presentation/InternalPortal.API/appsettings.json`:
     "Issuer": "InternalPortal",
     "Audience": "InternalPortalUsers",
     "ExpiryHours": 1
+  },
+  "Smtp": {
+    "Host": "localhost",
+    "Port": 1025,
+    "From": "noreply@internalportal.local"
   }
 }
 ```

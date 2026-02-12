@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using FluentAssertions;
+using InternalPortal.Application.Common.Interfaces;
 using InternalPortal.Persistence;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -32,6 +33,11 @@ public class ApiIntegrationTests : IClassFixture<ApiIntegrationTests.CustomFacto
                 // Add in-memory database
                 services.AddDbContext<ApplicationDbContext>(options =>
                     options.UseInMemoryDatabase(_dbName));
+
+                // Replace real email service with no-op stub for tests
+                var emailDescriptor = services.SingleOrDefault(d => d.ServiceType == typeof(IEmailService));
+                if (emailDescriptor != null) services.Remove(emailDescriptor);
+                services.AddScoped<IEmailService, StubEmailService>();
             });
         }
     }
@@ -112,4 +118,32 @@ public class ApiIntegrationTests : IClassFixture<ApiIntegrationTests.CustomFacto
         var uploadDoc = JsonDocument.Parse(uploadJson);
         uploadDoc.RootElement.GetProperty("profilePictureUrl").GetString().Should().Contain("/uploads/profile-pictures/");
     }
+
+    [Fact]
+    public async Task ForgotPassword_WithValidEmail_ShouldReturn200()
+    {
+        var content = new StringContent(
+            """{"email":"test@test.com"}""",
+            System.Text.Encoding.UTF8, "application/json");
+
+        var response = await _client.PostAsync("/api/auth/forgot-password", content);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task ResetPassword_WithoutToken_ShouldReturn400()
+    {
+        var content = new StringContent(
+            """{"email":"test@test.com","token":"","newPassword":"NewPassword123"}""",
+            System.Text.Encoding.UTF8, "application/json");
+
+        var response = await _client.PostAsync("/api/auth/reset-password", content);
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+}
+
+public class StubEmailService : IEmailService
+{
+    public Task SendEmailAsync(string to, string subject, string body, CancellationToken cancellationToken = default)
+        => Task.CompletedTask;
 }

@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Full Stack (Docker)
 ```bash
-docker compose up              # SQL Server (1433) + API (5001) + Frontend (3000)
+docker compose up              # SQL Server (1433) + API (5001) + Frontend (3000) + Mailpit (8025/1025)
 docker compose up --build      # Rebuild after code changes
 docker compose up -d sqlserver # Database only (for local dev)
 ```
@@ -50,7 +50,7 @@ Domain (innermost) → Application → Persistence/Infrastructure → API (outer
 - **Domain** (`InternalPortal.Domain`) — Entities inheriting `BaseEntity` (Id, CreatedAtUtc, UpdatedAtUtc, DomainEvents collection), value objects (DateTimeRange, Capacity, Address), domain events inheriting `BaseDomainEvent`, custom exceptions. Uses `MediatR.Contracts` only (not full MediatR).
 - **Application** (`InternalPortal.Application`) — CQRS via MediatR. Features organized as `Features/{BoundedContext}/Commands|Queries/`. Each command/query has a handler, validator (FluentValidation), and DTOs. Pipeline behaviors: ValidationBehavior → LoggingBehavior → PerformanceBehavior → UnhandledExceptionBehavior.
 - **Persistence** (`InternalPortal.Persistence`) — EF Core `ApplicationDbContext` with Fluent API configurations in `/Configurations/`. Repository pattern with `IRepository<T>` base. `SaveChangesAsync` sets audit fields and dispatches domain events via MediatR.
-- **Infrastructure** (`InternalPortal.Infrastructure`) — JWT auth (Bearer + refresh tokens), `ICurrentUserService`, SignalR `NotificationHub` at `/hubs/notifications`, email service. Requires `<FrameworkReference Include="Microsoft.AspNetCore.App" />`.
+- **Infrastructure** (`InternalPortal.Infrastructure`) — JWT auth (Bearer + refresh tokens), `ICurrentUserService`, SignalR `NotificationHub` at `/hubs/notifications`, email service (MailKit SMTP). Requires `<FrameworkReference Include="Microsoft.AspNetCore.App" />`.
 - **API** (`InternalPortal.API`) — Controllers, `ExceptionHandlingMiddleware` mapping domain exceptions to HTTP status codes, Swagger. DI wired via extension methods: `AddApplication()`, `AddPersistence()`, `AddInfrastructure()`.
 - **Frontend** (`internal-portal-web`) — Next.js 15 App Router, all pages `'use client'`. Axios client with JWT interceptors (`lib/api.ts`), React Query hooks in `hooks/use-*.ts`, Zustand store for real-time notification state. `NEXT_PUBLIC_API_URL` baked at build time. Path alias: `@/*` → `./src/*`.
 
@@ -62,6 +62,17 @@ Domain (innermost) → Application → Persistence/Infrastructure → API (outer
 - **Custom exceptions**: `NotFoundException`, `ForbiddenException`, `DomainException`, `ValidationException` — caught by `ExceptionHandlingMiddleware`
 - **CORS**: Allows `http://localhost:3000` — configured in `Program.cs`
 - **SignalR auth**: JWT passed via `?access_token=` query parameter
+
+## Email (Mailpit)
+
+In Docker, emails are sent via **Mailpit** (lightweight SMTP server + web UI for development).
+
+- **Web UI**: http://localhost:8025 — view all emails sent by the application
+- **SMTP**: port `1025` — no authentication or TLS required
+- Config in `appsettings.json` under `Smtp` section (`Host`, `Port`, `From`)
+- In Docker Compose, the API connects to `mailpit:1025` via env vars (`Smtp__Host`, `Smtp__Port`)
+- For local dev without Docker, run `docker compose up -d mailpit` or point `Smtp:Host` to any SMTP server
+- Integration tests replace the real `EmailService` with a no-op `StubEmailService`
 
 ## Testing
 

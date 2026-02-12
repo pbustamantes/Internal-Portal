@@ -44,4 +44,28 @@ public class AuthControllerTests
 
         result.Should().BeOfType<OkObjectResult>();
     }
+
+    [Fact]
+    public async Task ForgotPassword_WithValidCommand_ShouldReturnOk()
+    {
+        _mediator.Setup(m => m.Send(It.IsAny<ForgotPasswordCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Unit.Value);
+
+        var controller = new AuthController(_mediator.Object);
+        var result = await controller.ForgotPassword(new ForgotPasswordCommand("test@test.com"));
+
+        result.Should().BeOfType<OkResult>();
+    }
+
+    [Fact]
+    public async Task ResetPassword_WithValidCommand_ShouldReturnOk()
+    {
+        _mediator.Setup(m => m.Send(It.IsAny<ResetPasswordCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Unit.Value);
+
+        var controller = new AuthController(_mediator.Object);
+        var result = await controller.ResetPassword(new ResetPasswordCommand("test@test.com", "token", "NewPassword123"));
+
+        result.Should().BeOfType<OkResult>();
+    }
 }

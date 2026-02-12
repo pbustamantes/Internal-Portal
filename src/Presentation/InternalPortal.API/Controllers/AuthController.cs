@@ -52,4 +52,18 @@ public class AuthController : ControllerBase
         await _mediator.Send(command);
         return NoContent();
     }
+
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordCommand command)
+    {
+        await _mediator.Send(command);
+        return Ok();
+    }
+
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordCommand command)
+    {
+        await _mediator.Send(command);
+        return Ok();
+    }
 }

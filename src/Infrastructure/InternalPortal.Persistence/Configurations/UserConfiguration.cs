@@ -18,6 +18,9 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.ProfilePictureUrl).HasMaxLength(500);
         builder.Property(u => u.Role).HasConversion<string>().HasMaxLength(20);
 
+        builder.Property(u => u.PasswordResetToken).HasMaxLength(512);
+        builder.Property(u => u.PasswordResetTokenExpiresUtc);
+
         builder.Ignore(u => u.FullName);
         builder.Ignore(u => u.DomainEvents);
     }

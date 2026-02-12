@@ -13,6 +13,8 @@ public class User : BaseEntity
     public string? ProfilePictureUrl { get; set; }
     public UserRole Role { get; set; }
     public bool IsActive { get; set; } = true;
+    public string? PasswordResetToken { get; set; }
+    public DateTime? PasswordResetTokenExpiresUtc { get; set; }
 
     public string FullName => $"{FirstName} {LastName}";
 

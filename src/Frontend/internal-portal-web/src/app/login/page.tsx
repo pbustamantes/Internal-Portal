@@ -40,6 +40,9 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input label="Email" id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} required />
             <Input label="Password" id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} required />
+            <div className="text-right">
+              <Link href="/forgot-password" className="text-sm text-blue-600 hover:underline">Forgot your password?</Link>
+            </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? 'Signing in...' : 'Sign In'}
             </Button>
