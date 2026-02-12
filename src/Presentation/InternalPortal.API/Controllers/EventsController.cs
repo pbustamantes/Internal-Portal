@@ -21,9 +21,10 @@ public class EventsController : ControllerBase
 
     [HttpGet]
     public async Task<IActionResult> GetEvents([FromQuery] int page = 1, [FromQuery] int pageSize = 10,
-        [FromQuery] string? search = null, [FromQuery] Guid? categoryId = null)
+        [FromQuery] string? search = null, [FromQuery] Guid? categoryId = null,
+        [FromQuery] string? sortBy = null, [FromQuery] string? sortOrder = null)
     {
-        var result = await _mediator.Send(new GetEventsQuery(page, pageSize, search, categoryId));
+        var result = await _mediator.Send(new GetEventsQuery(page, pageSize, search, categoryId, sortBy, sortOrder));
         return Ok(result);
     }
 

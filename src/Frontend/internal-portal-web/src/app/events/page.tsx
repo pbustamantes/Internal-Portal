@@ -13,12 +13,13 @@ import { Loading } from '@/components/ui/loading';
 import { useEvents } from '@/hooks/use-events';
 import { useAuth } from '@/lib/auth-context';
 import { formatDateTime } from '@/lib/utils';
-import { Plus, Users, Search } from 'lucide-react';
+import { Plus, Users, Search, ArrowUpDown } from 'lucide-react';
 
 export default function EventsPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
-  const { data, isLoading } = useEvents(page, 10, search || undefined);
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const { data, isLoading } = useEvents(page, 10, search || undefined, undefined, 'date', sortOrder);
   const { user } = useAuth();
 
   return (
@@ -28,9 +29,15 @@ export default function EventsPage() {
         <Header title="Events" />
         <main className="p-8">
           <div className="flex items-center justify-between mb-6">
-            <div className="relative w-80">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <Input className="pl-10" placeholder="Search events..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
+            <div className="flex items-center gap-3">
+              <div className="relative w-80">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input className="pl-10" placeholder="Search events..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
+              </div>
+              <Button variant="secondary" size="sm" onClick={() => { setSortOrder(o => o === 'asc' ? 'desc' : 'asc'); setPage(1); }} title={sortOrder === 'asc' ? 'Showing earliest first' : 'Showing latest first'}>
+                <ArrowUpDown className="w-4 h-4 mr-2" />
+                {sortOrder === 'asc' ? 'Earliest first' : 'Latest first'}
+              </Button>
             </div>
             {(user?.role === 'Organizer' || user?.role === 'Admin') && (
               <Link href="/events/create"><Button><Plus className="w-4 h-4 mr-2" /> Create Event</Button></Link>

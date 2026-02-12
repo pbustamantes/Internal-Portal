@@ -2,13 +2,15 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import type { EventDto, EventSummary, PaginatedList, Attendee, CreateEventForm } from '@/types';
 
-export function useEvents(page = 1, pageSize = 10, search?: string, categoryId?: string) {
+export function useEvents(page = 1, pageSize = 10, search?: string, categoryId?: string, sortBy?: string, sortOrder?: string) {
   return useQuery({
-    queryKey: ['events', page, pageSize, search, categoryId],
+    queryKey: ['events', page, pageSize, search, categoryId, sortBy, sortOrder],
     queryFn: async () => {
       const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
       if (search) params.set('search', search);
       if (categoryId) params.set('categoryId', categoryId);
+      if (sortBy) params.set('sortBy', sortBy);
+      if (sortOrder) params.set('sortOrder', sortOrder);
       const { data } = await api.get<PaginatedList<EventSummary>>(`/events?${params}`);
       return data;
     },

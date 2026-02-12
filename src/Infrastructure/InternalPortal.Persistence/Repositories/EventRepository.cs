@@ -11,6 +11,7 @@ public class EventRepository : RepositoryBase<Event>, IEventRepository
 
     public async Task<(IReadOnlyList<Event> Items, int TotalCount)> GetPagedAsync(
         int page, int pageSize, string? search = null, Guid? categoryId = null,
+        string? sortBy = null, string? sortOrder = null,
         CancellationToken cancellationToken = default)
     {
         var query = Context.Events
@@ -26,8 +27,16 @@ public class EventRepository : RepositoryBase<Event>, IEventRepository
             query = query.Where(e => e.CategoryId == categoryId);
 
         var totalCount = await query.CountAsync(cancellationToken);
+
+        var descending = string.Equals(sortOrder, "desc", StringComparison.OrdinalIgnoreCase);
+        query = sortBy?.ToLowerInvariant() switch
+        {
+            "title" => descending ? query.OrderByDescending(e => e.Title) : query.OrderBy(e => e.Title),
+            "date" => descending ? query.OrderByDescending(e => e.Schedule.StartUtc) : query.OrderBy(e => e.Schedule.StartUtc),
+            _ => descending ? query.OrderByDescending(e => e.CreatedAtUtc) : query.OrderBy(e => e.CreatedAtUtc),
+        };
+
         var items = await query
-            .OrderByDescending(e => e.CreatedAtUtc)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(cancellationToken);

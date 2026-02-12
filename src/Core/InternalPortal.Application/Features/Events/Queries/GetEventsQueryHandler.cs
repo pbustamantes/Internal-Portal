@@ -20,7 +20,8 @@ public class GetEventsQueryHandler : IRequestHandler<GetEventsQuery, PaginatedLi
     public async Task<PaginatedList<EventSummaryDto>> Handle(GetEventsQuery request, CancellationToken cancellationToken)
     {
         var (items, totalCount) = await _eventRepository.GetPagedAsync(
-            request.Page, request.PageSize, request.Search, request.CategoryId, cancellationToken);
+            request.Page, request.PageSize, request.Search, request.CategoryId,
+            request.SortBy, request.SortOrder, cancellationToken);
 
         var pastPublished = items.Where(e => e.Status == EventStatus.Published && e.IsInPast).ToList();
         if (pastPublished.Count > 0)

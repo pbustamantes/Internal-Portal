@@ -6,6 +6,7 @@ public interface IEventRepository : IRepository<Event>
 {
     Task<(IReadOnlyList<Event> Items, int TotalCount)> GetPagedAsync(
         int page, int pageSize, string? search = null, Guid? categoryId = null,
+        string? sortBy = null, string? sortOrder = null,
         CancellationToken cancellationToken = default);
     Task<IReadOnlyList<Event>> GetByDateRangeAsync(DateTime startUtc, DateTime endUtc, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<Event>> GetUpcomingAsync(int count, CancellationToken cancellationToken = default);
