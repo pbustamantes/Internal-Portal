@@ -85,6 +85,23 @@ public static class SeedData
         }).ToArray();
         context.Events.AddRange(events);
 
+        // Seed notifications
+        var notificationData = ReadSeedData<List<NotificationData>>("notifications.json");
+        var eventLookup = events.ToDictionary(e => e.Title);
+
+        var notifications = notificationData.Select(n => new Notification
+        {
+            Id = Guid.NewGuid(),
+            UserId = userByRole[n.UserRole].Id,
+            EventId = eventLookup[n.EventTitle].Id,
+            Title = n.Title,
+            Message = n.Message,
+            Type = Enum.Parse<NotificationType>(n.Type),
+            IsRead = n.IsRead,
+            CreatedAtUtc = DateTime.UtcNow
+        }).ToArray();
+        context.Notifications.AddRange(notifications);
+
         await context.SaveChangesAsync();
     }
 
@@ -114,4 +131,5 @@ public static class SeedData
         string Title, string Description, string CategoryName, string VenueName, string OrganizerRole,
         int DayOffset, int StartHour, int StartMinute, int DurationHours, int DurationMinutes,
         int MinAttendees, int MaxAttendees, string Status, string Recurrence);
+    private record NotificationData(string UserRole, string EventTitle, string Title, string Message, string Type, bool IsRead);
 }

@@ -1,0 +1,82 @@
+[
+  {
+    "userRole": "Employee",
+    "eventTitle": "New Employee Onboarding",
+    "title": "New Event Published",
+    "message": "A new event 'New Employee Onboarding' has been published! Check it out and register.",
+    "type": "EventCreated",
+    "isRead": true
+  },
+  {
+    "userRole": "Employee",
+    "eventTitle": "New Employee Onboarding",
+    "title": "Registration Confirmed",
+    "message": "Your registration for 'New Employee Onboarding' has been confirmed. See you there!",
+    "type": "RegistrationConfirmed",
+    "isRead": true
+  },
+  {
+    "userRole": "Employee",
+    "eventTitle": "Q1 All-Hands Meeting",
+    "title": "New Event Published",
+    "message": "A new event 'Q1 All-Hands Meeting' has been published! All employees are expected to attend.",
+    "type": "EventCreated",
+    "isRead": true
+  },
+  {
+    "userRole": "Employee",
+    "eventTitle": "Q1 All-Hands Meeting",
+    "title": "Registration Confirmed",
+    "message": "Your registration for 'Q1 All-Hands Meeting' has been confirmed.",
+    "type": "RegistrationConfirmed",
+    "isRead": false
+  },
+  {
+    "userRole": "Employee",
+    "eventTitle": "React & TypeScript Workshop",
+    "title": "Added to Waitlist",
+    "message": "The 'React & TypeScript Workshop' is currently full. You have been added to the waitlist and will be notified if a spot opens up.",
+    "type": "Waitlisted",
+    "isRead": false
+  },
+  {
+    "userRole": "Employee",
+    "eventTitle": "React & TypeScript Workshop",
+    "title": "Promoted from Waitlist",
+    "message": "A spot has opened up! You have been promoted from the waitlist for 'React & TypeScript Workshop'. Your registration is now confirmed.",
+    "type": "PromotedFromWaitlist",
+    "isRead": false
+  },
+  {
+    "userRole": "Employee",
+    "eventTitle": "New Employee Onboarding",
+    "title": "Event Reminder",
+    "message": "Reminder: 'New Employee Onboarding' is coming up soon. Don't forget to bring your laptop!",
+    "type": "Reminder",
+    "isRead": false
+  },
+  {
+    "userRole": "Organizer",
+    "eventTitle": "Team Trivia Afternoon",
+    "title": "New Event Published",
+    "message": "Your event 'Team Trivia Afternoon' has been published and is now visible to all employees.",
+    "type": "EventCreated",
+    "isRead": true
+  },
+  {
+    "userRole": "Admin",
+    "eventTitle": "Product Roadmap Review",
+    "title": "Event Updated",
+    "message": "The event 'Product Roadmap Review' has been updated. The schedule has been adjusted — please review the latest details.",
+    "type": "EventUpdated",
+    "isRead": false
+  },
+  {
+    "userRole": "Employee",
+    "eventTitle": "Summer Kickoff Mixer",
+    "title": "Registration Cancelled",
+    "message": "Your registration for 'Summer Kickoff Mixer' has been cancelled as requested. You can re-register at any time if you change your mind.",
+    "type": "RegistrationCancelled",
+    "isRead": true
+  }
+]
