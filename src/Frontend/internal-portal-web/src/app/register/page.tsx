@@ -7,6 +7,8 @@ import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
+import { PasswordRequirements } from '@/components/ui/password-requirements';
+import { validatePassword } from '@/lib/password-validation';
 import { toast } from 'sonner';
 
 export default function RegisterPage() {
@@ -17,6 +19,11 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const passwordError = validatePassword(form.password);
+    if (passwordError) {
+      toast.error(`Password requirement not met: ${passwordError}`);
+      return;
+    }
     setIsLoading(true);
     try {
       await register(form.email, form.password, form.firstName, form.lastName, form.department || undefined);
@@ -44,7 +51,10 @@ export default function RegisterPage() {
               <Input label="Last Name" id="lastName" value={form.lastName} onChange={update('lastName')} required />
             </div>
             <Input label="Email" id="email" type="email" value={form.email} onChange={update('email')} required />
-            <Input label="Password" id="password" type="password" value={form.password} onChange={update('password')} required minLength={8} />
+            <div>
+              <Input label="Password" id="password" type="password" value={form.password} onChange={update('password')} required />
+              <PasswordRequirements password={form.password} />
+            </div>
             <Input label="Department" id="department" value={form.department} onChange={update('department')} />
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? 'Creating account...' : 'Create Account'}

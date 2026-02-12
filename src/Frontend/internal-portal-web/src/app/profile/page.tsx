@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/lib/auth-context';
+import { PasswordRequirements } from '@/components/ui/password-requirements';
+import { validatePassword } from '@/lib/password-validation';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 
@@ -82,6 +84,11 @@ export default function ProfilePage() {
     e.preventDefault();
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
       toast.error('New passwords do not match');
+      return;
+    }
+    const passwordError = validatePassword(passwordForm.newPassword);
+    if (passwordError) {
+      toast.error(`Password requirement not met: ${passwordError}`);
       return;
     }
     setChangingPassword(true);
@@ -179,7 +186,10 @@ export default function ProfilePage() {
             <CardContent>
               <form onSubmit={handleChangePassword} className="space-y-4">
                 <Input label="Current Password" id="currentPassword" type="password" value={passwordForm.currentPassword} onChange={updatePassword('currentPassword')} required />
-                <Input label="New Password" id="newPassword" type="password" value={passwordForm.newPassword} onChange={updatePassword('newPassword')} required />
+                <div>
+                  <Input label="New Password" id="newPassword" type="password" value={passwordForm.newPassword} onChange={updatePassword('newPassword')} required />
+                  <PasswordRequirements password={passwordForm.newPassword} />
+                </div>
                 <Input label="Confirm New Password" id="confirmPassword" type="password" value={passwordForm.confirmPassword} onChange={updatePassword('confirmPassword')} required />
                 <Button type="submit" disabled={changingPassword}>{changingPassword ? 'Changing...' : 'Change Password'}</Button>
               </form>

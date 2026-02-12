@@ -7,6 +7,8 @@ import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
+import { PasswordRequirements } from '@/components/ui/password-requirements';
+import { validatePassword } from '@/lib/password-validation';
 import { toast } from 'sonner';
 
 function ResetPasswordForm() {
@@ -28,8 +30,9 @@ function ResetPasswordForm() {
       return;
     }
 
-    if (newPassword.length < 8) {
-      setError('Password must be at least 8 characters.');
+    const passwordError = validatePassword(newPassword);
+    if (passwordError) {
+      setError(`Password requirement not met: ${passwordError}`);
       return;
     }
 
@@ -68,7 +71,10 @@ function ResetPasswordForm() {
             <p className="text-gray-500 mt-1">Enter your new password</p>
           </div>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <Input label="New Password" id="newPassword" type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} required />
+            <div>
+              <Input label="New Password" id="newPassword" type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} required />
+              <PasswordRequirements password={newPassword} />
+            </div>
             <Input label="Confirm Password" id="confirmPassword" type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required />
             {error && <p className="text-red-600 text-sm">{error}</p>}
             <Button type="submit" className="w-full" disabled={isLoading}>
