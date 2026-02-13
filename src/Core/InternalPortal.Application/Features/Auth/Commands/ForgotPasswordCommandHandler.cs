@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Security.Cryptography;
 using InternalPortal.Application.Common.Interfaces;
+using InternalPortal.Application.Common.Security;
 using InternalPortal.Domain.Interfaces;
 using MediatR;
 using Microsoft.Extensions.Configuration;
@@ -34,7 +35,7 @@ public class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswordComman
             return Unit.Value;
 
         var rawToken = GenerateToken();
-        var hashedToken = HashToken(rawToken);
+        var hashedToken = TokenHasher.HashToken(rawToken);
 
         user.PasswordResetToken = hashedToken;
         user.PasswordResetTokenExpiresUtc = DateTime.UtcNow.AddHours(1);
@@ -62,13 +63,6 @@ public class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswordComman
         using var rng = RandomNumberGenerator.Create();
         rng.GetBytes(randomBytes);
         return Convert.ToBase64String(randomBytes);
-    }
-
-    private static string HashToken(string token)
-    {
-        var bytes = System.Text.Encoding.UTF8.GetBytes(token);
-        var hash = SHA256.HashData(bytes);
-        return Convert.ToBase64String(hash);
     }
 
     private static async Task<string> LoadTemplateAsync(string templateName, CancellationToken cancellationToken)
