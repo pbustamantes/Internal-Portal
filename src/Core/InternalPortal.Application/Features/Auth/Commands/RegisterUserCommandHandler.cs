@@ -1,4 +1,5 @@
 using InternalPortal.Application.Common.Interfaces;
+using InternalPortal.Application.Common.Security;
 using InternalPortal.Application.Features.Auth.DTOs;
 using InternalPortal.Domain.Entities;
 using InternalPortal.Domain.Interfaces;
@@ -44,7 +45,7 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, A
         var refreshToken = new RefreshToken
         {
             Id = Guid.NewGuid(),
-            Token = refreshTokenValue,
+            TokenHash = TokenHasher.HashToken(refreshTokenValue),
             UserId = user.Id,
             ExpiresUtc = DateTime.UtcNow.AddDays(7),
             CreatedAtUtc = DateTime.UtcNow

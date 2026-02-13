@@ -8,9 +8,9 @@ public class RefreshTokenRepository : RepositoryBase<RefreshToken>, IRefreshToke
 {
     public RefreshTokenRepository(ApplicationDbContext context) : base(context) { }
 
-    public async Task<RefreshToken?> GetByTokenAsync(string token, CancellationToken cancellationToken = default)
+    public async Task<RefreshToken?> GetByTokenHashAsync(string tokenHash, CancellationToken cancellationToken = default)
     {
-        return await Context.RefreshTokens.FirstOrDefaultAsync(t => t.Token == token, cancellationToken);
+        return await Context.RefreshTokens.FirstOrDefaultAsync(t => t.TokenHash == tokenHash, cancellationToken);
     }
 
     public async Task RevokeAllForUserAsync(Guid userId, CancellationToken cancellationToken = default)

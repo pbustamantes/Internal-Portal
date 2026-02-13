@@ -1,6 +1,7 @@
 using Xunit;
 using FluentAssertions;
 using InternalPortal.Application.Common.Interfaces;
+using InternalPortal.Application.Common.Security;
 using InternalPortal.Application.Features.Auth.Commands;
 using InternalPortal.Domain.Entities;
 using InternalPortal.Domain.Interfaces;
@@ -35,6 +36,11 @@ public class LoginCommandHandlerTests
         result.AccessToken.Should().Be("jwt-token");
         result.RefreshToken.Should().Be("refresh-token");
         result.User.Email.Should().Be("test@example.com");
+
+        // Verify stored token is hashed, not raw
+        _refreshTokenRepo.Verify(r => r.AddAsync(
+            It.Is<RefreshToken>(t => t.TokenHash == TokenHasher.HashToken("refresh-token")),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

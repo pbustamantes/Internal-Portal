@@ -1,4 +1,5 @@
 using InternalPortal.Application.Common.Interfaces;
+using InternalPortal.Application.Common.Security;
 using InternalPortal.Application.Features.Auth.DTOs;
 using InternalPortal.Domain.Entities;
 using InternalPortal.Domain.Interfaces;
@@ -27,7 +28,8 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, A
 
     public async Task<AuthResponse> Handle(RefreshTokenCommand request, CancellationToken cancellationToken)
     {
-        var existingToken = await _refreshTokenRepository.GetByTokenAsync(request.RefreshToken, cancellationToken)
+        var requestTokenHash = TokenHasher.HashToken(request.RefreshToken);
+        var existingToken = await _refreshTokenRepository.GetByTokenHashAsync(requestTokenHash, cancellationToken)
             ?? throw new ApplicationException("Invalid refresh token.");
 
         if (!existingToken.IsActive)
@@ -37,14 +39,15 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, A
             ?? throw new ApplicationException("User not found.");
 
         // Rotate token
+        var newRawToken = _jwtService.GenerateRefreshToken();
         existingToken.RevokedAtUtc = DateTime.UtcNow;
-        existingToken.ReplacedByToken = _jwtService.GenerateRefreshToken();
+        existingToken.ReplacedByTokenHash = TokenHasher.HashToken(newRawToken);
         await _refreshTokenRepository.UpdateAsync(existingToken, cancellationToken);
 
         var newRefreshToken = new RefreshToken
         {
             Id = Guid.NewGuid(),
-            Token = existingToken.ReplacedByToken,
+            TokenHash = TokenHasher.HashToken(newRawToken),
             UserId = user.Id,
             ExpiresUtc = DateTime.UtcNow.AddDays(7),
             CreatedAtUtc = DateTime.UtcNow
@@ -57,7 +60,7 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, A
 
         return new AuthResponse(
             accessToken,
-            newRefreshToken.Token,
+            newRawToken,
             DateTime.UtcNow.AddHours(1),
             new UserDto(user.Id, user.Email, user.FirstName, user.LastName, user.Department, user.Role.ToString(), user.ProfilePictureUrl));
     }

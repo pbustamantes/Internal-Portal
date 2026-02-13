@@ -2,6 +2,7 @@ using Xunit;
 using FluentAssertions;
 using InternalPortal.Application.Common.Exceptions;
 using InternalPortal.Application.Common.Interfaces;
+using InternalPortal.Application.Common.Security;
 using InternalPortal.Application.Features.Auth.Commands;
 using InternalPortal.Domain.Entities;
 using InternalPortal.Domain.Interfaces;
@@ -22,18 +23,19 @@ public class RevokeTokenCommandHandlerTests
     public async Task Handle_WithOwnToken_ShouldRevokeSuccessfully()
     {
         var userId = Guid.NewGuid();
+        var rawToken = "valid-token";
         var token = new RefreshToken
         {
-            Token = "valid-token",
+            TokenHash = TokenHasher.HashToken(rawToken),
             UserId = userId,
             ExpiresUtc = DateTime.UtcNow.AddDays(7)
         };
 
         _currentUserService.Setup(s => s.UserId).Returns(userId);
-        _refreshTokenRepo.Setup(r => r.GetByTokenAsync("valid-token", It.IsAny<CancellationToken>())).ReturnsAsync(token);
+        _refreshTokenRepo.Setup(r => r.GetByTokenHashAsync(TokenHasher.HashToken(rawToken), It.IsAny<CancellationToken>())).ReturnsAsync(token);
 
         var handler = CreateHandler();
-        await handler.Handle(new RevokeTokenCommand("valid-token"), CancellationToken.None);
+        await handler.Handle(new RevokeTokenCommand(rawToken), CancellationToken.None);
 
         token.RevokedAtUtc.Should().NotBeNull();
         _refreshTokenRepo.Verify(r => r.UpdateAsync(token, It.IsAny<CancellationToken>()), Times.Once);
@@ -45,18 +47,19 @@ public class RevokeTokenCommandHandlerTests
     {
         var tokenOwnerId = Guid.NewGuid();
         var currentUserId = Guid.NewGuid();
+        var rawToken = "other-user-token";
         var token = new RefreshToken
         {
-            Token = "other-user-token",
+            TokenHash = TokenHasher.HashToken(rawToken),
             UserId = tokenOwnerId,
             ExpiresUtc = DateTime.UtcNow.AddDays(7)
         };
 
         _currentUserService.Setup(s => s.UserId).Returns(currentUserId);
-        _refreshTokenRepo.Setup(r => r.GetByTokenAsync("other-user-token", It.IsAny<CancellationToken>())).ReturnsAsync(token);
+        _refreshTokenRepo.Setup(r => r.GetByTokenHashAsync(TokenHasher.HashToken(rawToken), It.IsAny<CancellationToken>())).ReturnsAsync(token);
 
         var handler = CreateHandler();
-        var act = () => handler.Handle(new RevokeTokenCommand("other-user-token"), CancellationToken.None);
+        var act = () => handler.Handle(new RevokeTokenCommand(rawToken), CancellationToken.None);
 
         await act.Should().ThrowAsync<ForbiddenException>();
         _refreshTokenRepo.Verify(r => r.UpdateAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -65,7 +68,7 @@ public class RevokeTokenCommandHandlerTests
     [Fact]
     public async Task Handle_WithInvalidToken_ShouldThrowApplicationException()
     {
-        _refreshTokenRepo.Setup(r => r.GetByTokenAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync((RefreshToken?)null);
+        _refreshTokenRepo.Setup(r => r.GetByTokenHashAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync((RefreshToken?)null);
 
         var handler = CreateHandler();
         var act = () => handler.Handle(new RevokeTokenCommand("nonexistent-token"), CancellationToken.None);
@@ -77,19 +80,20 @@ public class RevokeTokenCommandHandlerTests
     public async Task Handle_WithAlreadyRevokedToken_ShouldThrowApplicationException()
     {
         var userId = Guid.NewGuid();
+        var rawToken = "revoked-token";
         var token = new RefreshToken
         {
-            Token = "revoked-token",
+            TokenHash = TokenHasher.HashToken(rawToken),
             UserId = userId,
             ExpiresUtc = DateTime.UtcNow.AddDays(7),
             RevokedAtUtc = DateTime.UtcNow.AddHours(-1)
         };
 
         _currentUserService.Setup(s => s.UserId).Returns(userId);
-        _refreshTokenRepo.Setup(r => r.GetByTokenAsync("revoked-token", It.IsAny<CancellationToken>())).ReturnsAsync(token);
+        _refreshTokenRepo.Setup(r => r.GetByTokenHashAsync(TokenHasher.HashToken(rawToken), It.IsAny<CancellationToken>())).ReturnsAsync(token);
 
         var handler = CreateHandler();
-        var act = () => handler.Handle(new RevokeTokenCommand("revoked-token"), CancellationToken.None);
+        var act = () => handler.Handle(new RevokeTokenCommand(rawToken), CancellationToken.None);
 
         await act.Should().ThrowAsync<ApplicationException>().WithMessage("Token is already revoked.");
     }
