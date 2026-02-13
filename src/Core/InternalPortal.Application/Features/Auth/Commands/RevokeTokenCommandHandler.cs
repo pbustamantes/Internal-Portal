@@ -1,5 +1,6 @@
 using InternalPortal.Application.Common.Exceptions;
 using InternalPortal.Application.Common.Interfaces;
+using InternalPortal.Application.Common.Security;
 using InternalPortal.Domain.Interfaces;
 using MediatR;
 
@@ -20,7 +21,8 @@ public class RevokeTokenCommandHandler : IRequestHandler<RevokeTokenCommand, Uni
 
     public async Task<Unit> Handle(RevokeTokenCommand request, CancellationToken cancellationToken)
     {
-        var token = await _refreshTokenRepository.GetByTokenAsync(request.RefreshToken, cancellationToken)
+        var tokenHash = TokenHasher.HashToken(request.RefreshToken);
+        var token = await _refreshTokenRepository.GetByTokenHashAsync(tokenHash, cancellationToken)
             ?? throw new ApplicationException("Invalid refresh token.");
 
         if (token.UserId != _currentUserService.UserId)
