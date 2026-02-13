@@ -14,6 +14,7 @@ namespace InternalPortal.Integration.Tests;
 
 public class ApiIntegrationTests : IClassFixture<ApiIntegrationTests.CustomFactory>
 {
+    private readonly CustomFactory _factory;
     private readonly HttpClient _client;
 
     public class CustomFactory : WebApplicationFactory<Program>
@@ -45,7 +46,19 @@ public class ApiIntegrationTests : IClassFixture<ApiIntegrationTests.CustomFacto
 
     public ApiIntegrationTests(CustomFactory factory)
     {
+        _factory = factory;
         _client = factory.CreateClient();
+    }
+
+    /// <summary>
+    /// Creates an HttpClient that preserves cookies across requests (for refresh token cookie flow).
+    /// </summary>
+    private HttpClient CreateCookieClient()
+    {
+        var cookieContainer = new CookieContainer();
+        var handler = new CookieContainerHandler(_factory.Server.CreateHandler(), cookieContainer);
+        var client = new HttpClient(handler) { BaseAddress = _factory.Server.BaseAddress };
+        return client;
     }
 
     [Fact]
@@ -56,7 +69,7 @@ public class ApiIntegrationTests : IClassFixture<ApiIntegrationTests.CustomFacto
     }
 
     [Fact]
-    public async Task Register_WithValidData_ShouldReturn200()
+    public async Task Register_WithValidData_ShouldReturn200AndSetRefreshCookie()
     {
         var content = new StringContent(
             """{"email":"test@test.com","password":"Password123!","firstName":"Test","lastName":"User"}""",
@@ -64,6 +77,18 @@ public class ApiIntegrationTests : IClassFixture<ApiIntegrationTests.CustomFacto
 
         var response = await _client.PostAsync("/api/auth/register", content);
         response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // Verify refresh token is in Set-Cookie, not in response body
+        response.Headers.TryGetValues("Set-Cookie", out var cookies).Should().BeTrue();
+        var setCookie = string.Join("; ", cookies!);
+        setCookie.Should().Contain("refreshToken=");
+        setCookie.Should().Contain("httponly");
+        setCookie.Should().Contain("path=/api/auth");
+
+        var json = await response.Content.ReadAsStringAsync();
+        var doc = JsonDocument.Parse(json);
+        doc.RootElement.TryGetProperty("refreshToken", out _).Should().BeFalse();
+        doc.RootElement.GetProperty("accessToken").GetString().Should().NotBeNullOrEmpty();
     }
 
     [Fact]
@@ -120,7 +145,7 @@ public class ApiIntegrationTests : IClassFixture<ApiIntegrationTests.CustomFacto
         uploadDoc.RootElement.GetProperty("profilePictureUrl").GetString().Should().Contain("/uploads/profile-pictures/");
     }
 
-    private async Task<(string accessToken, string refreshToken)> RegisterAndGetTokens(string email)
+    private async Task<string> RegisterAndGetAccessToken(string email)
     {
         var content = new StringContent(
             $$"""{"email":"{{email}}","password":"Password123!","firstName":"Test","lastName":"User"}""",
@@ -130,52 +155,85 @@ public class ApiIntegrationTests : IClassFixture<ApiIntegrationTests.CustomFacto
 
         var json = await response.Content.ReadAsStringAsync();
         var doc = JsonDocument.Parse(json);
-        return (
-            doc.RootElement.GetProperty("accessToken").GetString()!,
-            doc.RootElement.GetProperty("refreshToken").GetString()!
-        );
+        return doc.RootElement.GetProperty("accessToken").GetString()!;
+    }
+
+    /// <summary>
+    /// Register via a cookie-aware client so the refresh token cookie is automatically stored.
+    /// Returns (cookieClient, accessToken).
+    /// </summary>
+    private async Task<(HttpClient cookieClient, string accessToken)> RegisterWithCookieClient(string email)
+    {
+        var cookieClient = CreateCookieClient();
+        var content = new StringContent(
+            $$"""{"email":"{{email}}","password":"Password123!","firstName":"Test","lastName":"User"}""",
+            System.Text.Encoding.UTF8, "application/json");
+        var response = await cookieClient.PostAsync("/api/auth/register", content);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var json = await response.Content.ReadAsStringAsync();
+        var doc = JsonDocument.Parse(json);
+        return (cookieClient, doc.RootElement.GetProperty("accessToken").GetString()!);
     }
 
     [Fact]
-    public async Task RevokeToken_WithOwnToken_ShouldReturn204()
+    public async Task RevokeToken_WithCookie_ShouldReturn204()
     {
-        var (accessToken, refreshToken) = await RegisterAndGetTokens("revoke-self@test.com");
+        var (cookieClient, accessToken) = await RegisterWithCookieClient("revoke-self@test.com");
 
         using var request = new HttpRequestMessage(HttpMethod.Post, "/api/auth/revoke");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-        request.Content = new StringContent(
-            $$"""{"refreshToken":"{{refreshToken}}"}""",
-            System.Text.Encoding.UTF8, "application/json");
 
-        var response = await _client.SendAsync(request);
+        var response = await cookieClient.SendAsync(request);
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
-    }
-
-    [Fact]
-    public async Task RevokeToken_WithAnotherUsersToken_ShouldReturn403()
-    {
-        var (accessTokenA, _) = await RegisterAndGetTokens("revoke-a@test.com");
-        var (_, refreshTokenB) = await RegisterAndGetTokens("revoke-b@test.com");
-
-        // User A tries to revoke User B's refresh token
-        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/auth/revoke");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessTokenA);
-        request.Content = new StringContent(
-            $$"""{"refreshToken":"{{refreshTokenB}}"}""",
-            System.Text.Encoding.UTF8, "application/json");
-
-        var response = await _client.SendAsync(request);
-        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     [Fact]
     public async Task RevokeToken_WithoutAuth_ShouldReturn401()
     {
-        var response = await _client.PostAsync("/api/auth/revoke",
-            new StringContent("""{"refreshToken":"some-token"}""",
-                System.Text.Encoding.UTF8, "application/json"));
-
+        var response = await _client.PostAsync("/api/auth/revoke", null);
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task RefreshToken_WithCookie_ShouldReturnNewAccessToken()
+    {
+        var (cookieClient, _) = await RegisterWithCookieClient("refresh-test@test.com");
+
+        // Call refresh — cookie is sent automatically
+        var refreshResponse = await cookieClient.PostAsync("/api/auth/refresh", null);
+        refreshResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var json = await refreshResponse.Content.ReadAsStringAsync();
+        var doc = JsonDocument.Parse(json);
+        doc.RootElement.GetProperty("accessToken").GetString().Should().NotBeNullOrEmpty();
+
+        // Verify a new cookie was issued (rotation)
+        refreshResponse.Headers.TryGetValues("Set-Cookie", out var cookies).Should().BeTrue();
+        string.Join("; ", cookies!).Should().Contain("refreshToken=");
+    }
+
+    [Fact]
+    public async Task RefreshToken_WithoutCookie_ShouldReturn401()
+    {
+        var response = await _client.PostAsync("/api/auth/refresh", null);
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task Logout_WithCookie_ShouldClearCookieAndReturn204()
+    {
+        var (cookieClient, accessToken) = await RegisterWithCookieClient("logout-test@test.com");
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/auth/logout");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        var response = await cookieClient.SendAsync(request);
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        // After logout, refresh should fail
+        var refreshResponse = await cookieClient.PostAsync("/api/auth/refresh", null);
+        refreshResponse.StatusCode.Should().BeOneOf(HttpStatusCode.Unauthorized, HttpStatusCode.BadRequest);
     }
 
     // ── Profile endpoints ──
@@ -183,7 +241,7 @@ public class ApiIntegrationTests : IClassFixture<ApiIntegrationTests.CustomFacto
     [Fact]
     public async Task GetCurrentUser_WithAuth_ShouldReturn200WithUserData()
     {
-        var (accessToken, _) = await RegisterAndGetTokens("getme@test.com");
+        var accessToken = await RegisterAndGetAccessToken("getme@test.com");
 
         using var request = new HttpRequestMessage(HttpMethod.Get, "/api/users/me");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
@@ -208,7 +266,7 @@ public class ApiIntegrationTests : IClassFixture<ApiIntegrationTests.CustomFacto
     [Fact]
     public async Task UpdateProfile_WithValidData_ShouldReturn200WithUpdatedFields()
     {
-        var (accessToken, _) = await RegisterAndGetTokens("update-profile@test.com");
+        var accessToken = await RegisterAndGetAccessToken("update-profile@test.com");
 
         using var request = new HttpRequestMessage(HttpMethod.Put, "/api/users/me");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
@@ -229,7 +287,7 @@ public class ApiIntegrationTests : IClassFixture<ApiIntegrationTests.CustomFacto
     [Fact]
     public async Task UpdateProfile_ShouldPersistChanges()
     {
-        var (accessToken, _) = await RegisterAndGetTokens("update-persist@test.com");
+        var accessToken = await RegisterAndGetAccessToken("update-persist@test.com");
 
         // Update
         using var updateRequest = new HttpRequestMessage(HttpMethod.Put, "/api/users/me");
@@ -263,7 +321,7 @@ public class ApiIntegrationTests : IClassFixture<ApiIntegrationTests.CustomFacto
     [Fact]
     public async Task UploadProfilePicture_WithInvalidExtension_ShouldReturn400()
     {
-        var (accessToken, _) = await RegisterAndGetTokens("bad-ext@test.com");
+        var accessToken = await RegisterAndGetAccessToken("bad-ext@test.com");
 
         var formContent = new MultipartFormDataContent();
         var fileContent = new ByteArrayContent(new byte[] { 1, 2, 3 });
@@ -293,7 +351,7 @@ public class ApiIntegrationTests : IClassFixture<ApiIntegrationTests.CustomFacto
     [Fact]
     public async Task DeleteProfilePicture_AfterUpload_ShouldClearUrl()
     {
-        var (accessToken, _) = await RegisterAndGetTokens("delete-pic@test.com");
+        var accessToken = await RegisterAndGetAccessToken("delete-pic@test.com");
 
         // Upload a picture first
         var pngBytes = new byte[]
@@ -335,7 +393,7 @@ public class ApiIntegrationTests : IClassFixture<ApiIntegrationTests.CustomFacto
     [Fact]
     public async Task DeleteProfilePicture_WithNoPicture_ShouldReturn200WithNullUrl()
     {
-        var (accessToken, _) = await RegisterAndGetTokens("no-pic-delete@test.com");
+        var accessToken = await RegisterAndGetAccessToken("no-pic-delete@test.com");
 
         using var request = new HttpRequestMessage(HttpMethod.Delete, "/api/users/me/profile-picture");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
@@ -365,7 +423,7 @@ public class ApiIntegrationTests : IClassFixture<ApiIntegrationTests.CustomFacto
     [Fact]
     public async Task GetMyEvents_WithAuth_ShouldReturn200()
     {
-        var (accessToken, _) = await RegisterAndGetTokens("my-events@test.com");
+        var accessToken = await RegisterAndGetAccessToken("my-events@test.com");
 
         using var request = new HttpRequestMessage(HttpMethod.Get, "/api/users/me/events");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
@@ -396,6 +454,43 @@ public class ApiIntegrationTests : IClassFixture<ApiIntegrationTests.CustomFacto
 
         var response = await _client.PostAsync("/api/auth/reset-password", content);
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+}
+
+/// <summary>
+/// Delegating handler that adds cookie support on top of the test server's handler.
+/// </summary>
+internal class CookieContainerHandler : DelegatingHandler
+{
+    private readonly CookieContainer _cookieContainer;
+
+    public CookieContainerHandler(HttpMessageHandler inner, CookieContainer cookieContainer)
+        : base(inner)
+    {
+        _cookieContainer = cookieContainer;
+    }
+
+    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        // Add stored cookies to the request
+        var cookieHeader = _cookieContainer.GetCookieHeader(request.RequestUri!);
+        if (!string.IsNullOrEmpty(cookieHeader))
+        {
+            request.Headers.Add("Cookie", cookieHeader);
+        }
+
+        var response = await base.SendAsync(request, cancellationToken);
+
+        // Store response cookies
+        if (response.Headers.TryGetValues("Set-Cookie", out var setCookieHeaders))
+        {
+            foreach (var cookie in setCookieHeaders)
+            {
+                _cookieContainer.SetCookies(request.RequestUri!, cookie);
+            }
+        }
+
+        return response;
     }
 }
 
