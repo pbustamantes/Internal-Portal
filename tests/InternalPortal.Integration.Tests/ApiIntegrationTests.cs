@@ -119,6 +119,64 @@ public class ApiIntegrationTests : IClassFixture<ApiIntegrationTests.CustomFacto
         uploadDoc.RootElement.GetProperty("profilePictureUrl").GetString().Should().Contain("/uploads/profile-pictures/");
     }
 
+    private async Task<(string accessToken, string refreshToken)> RegisterAndGetTokens(string email)
+    {
+        var content = new StringContent(
+            $$"""{"email":"{{email}}","password":"Password123!","firstName":"Test","lastName":"User"}""",
+            System.Text.Encoding.UTF8, "application/json");
+        var response = await _client.PostAsync("/api/auth/register", content);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var json = await response.Content.ReadAsStringAsync();
+        var doc = JsonDocument.Parse(json);
+        return (
+            doc.RootElement.GetProperty("accessToken").GetString()!,
+            doc.RootElement.GetProperty("refreshToken").GetString()!
+        );
+    }
+
+    [Fact]
+    public async Task RevokeToken_WithOwnToken_ShouldReturn204()
+    {
+        var (accessToken, refreshToken) = await RegisterAndGetTokens("revoke-self@test.com");
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/auth/revoke");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        request.Content = new StringContent(
+            $$"""{"refreshToken":"{{refreshToken}}"}""",
+            System.Text.Encoding.UTF8, "application/json");
+
+        var response = await _client.SendAsync(request);
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
+    [Fact]
+    public async Task RevokeToken_WithAnotherUsersToken_ShouldReturn403()
+    {
+        var (accessTokenA, _) = await RegisterAndGetTokens("revoke-a@test.com");
+        var (_, refreshTokenB) = await RegisterAndGetTokens("revoke-b@test.com");
+
+        // User A tries to revoke User B's refresh token
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/auth/revoke");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessTokenA);
+        request.Content = new StringContent(
+            $$"""{"refreshToken":"{{refreshTokenB}}"}""",
+            System.Text.Encoding.UTF8, "application/json");
+
+        var response = await _client.SendAsync(request);
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task RevokeToken_WithoutAuth_ShouldReturn401()
+    {
+        var response = await _client.PostAsync("/api/auth/revoke",
+            new StringContent("""{"refreshToken":"some-token"}""",
+                System.Text.Encoding.UTF8, "application/json"));
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
     [Fact]
     public async Task ForgotPassword_WithValidEmail_ShouldReturn200()
     {
