@@ -2,6 +2,8 @@
 
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
 import api from '@/lib/api';
+import { queryClient } from '@/lib/query-provider';
+import { useNotificationStore } from '@/lib/notification-store';
 import type { User, AuthResponse } from '@/types';
 
 interface AuthContextType {
@@ -65,6 +67,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
       setUser(null);
+      queryClient.clear();
+      useNotificationStore.getState().clearStore();
     }
   };
 

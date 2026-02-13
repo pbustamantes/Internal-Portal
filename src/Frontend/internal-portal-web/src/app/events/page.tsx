@@ -56,7 +56,7 @@ export default function EventsPage() {
                             {event.categoryName && (
                               <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: event.categoryColor + '20', color: event.categoryColor ?? undefined }}>{event.categoryName}</span>
                             )}
-                            <Badge status={event.status}>{event.status}</Badge>
+                            {user?.role === 'Admin' && <Badge status={event.status}>{event.status}</Badge>}
                           </div>
                         </div>
                         <h3 className="font-semibold text-gray-900 mb-2">{event.title}</h3>

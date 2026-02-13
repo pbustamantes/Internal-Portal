@@ -1,4 +1,5 @@
 using InternalPortal.Application.Common.Exceptions;
+using InternalPortal.Application.Common.Interfaces;
 using InternalPortal.Application.Features.Events.DTOs;
 using InternalPortal.Domain.Enums;
 using InternalPortal.Domain.Interfaces;
@@ -10,17 +11,22 @@ public class GetEventByIdQueryHandler : IRequestHandler<GetEventByIdQuery, Event
 {
     private readonly IEventRepository _eventRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly ICurrentUserService _currentUserService;
 
-    public GetEventByIdQueryHandler(IEventRepository eventRepository, IUnitOfWork unitOfWork)
+    public GetEventByIdQueryHandler(IEventRepository eventRepository, IUnitOfWork unitOfWork, ICurrentUserService currentUserService)
     {
         _eventRepository = eventRepository;
         _unitOfWork = unitOfWork;
+        _currentUserService = currentUserService;
     }
 
     public async Task<EventDto> Handle(GetEventByIdQuery request, CancellationToken cancellationToken)
     {
         var evt = await _eventRepository.GetByIdWithDetailsAsync(request.Id, cancellationToken)
             ?? throw new NotFoundException("Event", request.Id);
+
+        if (evt.Status == EventStatus.Draft && _currentUserService.Role != UserRole.Admin.ToString())
+            throw new ForbiddenException("Draft events are only visible to administrators.");
 
         if (evt.Status == EventStatus.Published && evt.IsInPast)
         {

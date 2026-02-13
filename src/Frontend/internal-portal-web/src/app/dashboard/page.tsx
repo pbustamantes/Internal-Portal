@@ -8,11 +8,13 @@ import { Badge } from '@/components/ui/badge';
 import { Loading } from '@/components/ui/loading';
 import { useUpcomingEvents } from '@/hooks/use-events';
 import { useNotifications } from '@/hooks/use-notifications';
+import { useAuth } from '@/lib/auth-context';
 import { formatDateTime, formatTimeAgo } from '@/lib/utils';
 import Link from 'next/link';
 import { Calendar, Users, Bell, Ticket } from 'lucide-react';
 
 export default function DashboardPage() {
+  const { user } = useAuth();
   const { data: events, isLoading: eventsLoading } = useUpcomingEvents(5);
   const { data: notifications, isLoading: notifLoading } = useNotifications();
 
@@ -57,7 +59,7 @@ export default function DashboardPage() {
                           <span className="text-sm text-gray-500 flex items-center gap-1">
                             <Users className="w-4 h-4" /> {event.currentAttendees}/{event.maxAttendees}
                           </span>
-                          <Badge status={event.status}>{event.status}</Badge>
+                          {user?.role === 'Admin' && <Badge status={event.status}>{event.status}</Badge>}
                         </div>
                       </Link>
                     ))}

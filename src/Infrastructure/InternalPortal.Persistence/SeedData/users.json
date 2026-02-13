@@ -1,7 +1,7 @@
 [
   {
     "email": "admin@company.com",
-    "passwordHash": "$2a$11$K5mXjQh3GDjIF/EkzLc7xeJFCN5VBgq.oRPr3Wm8dFRVqESvKfKR.",
+    "passwordHash": "$2a$11$f9utsGpseNlHt1jlUo12Le20Nt8Up1L3wAWJJgqP.PFChWyaJEGqq",
     "firstName": "Admin",
     "lastName": "User",
     "department": "IT",
@@ -9,7 +9,7 @@
   },
   {
     "email": "organizer@company.com",
-    "passwordHash": "$2a$11$K5mXjQh3GDjIF/EkzLc7xeJFCN5VBgq.oRPr3Wm8dFRVqESvKfKR.",
+    "passwordHash": "$2a$11$fRvgvI3TIChpjV5WE1teKeQiFjgd46fwXZnM6iSXkvgJoCXsSx2RG",
     "firstName": "Event",
     "lastName": "Organizer",
     "department": "HR",
@@ -17,7 +17,7 @@
   },
   {
     "email": "employee@company.com",
-    "passwordHash": "$2a$11$K5mXjQh3GDjIF/EkzLc7xeJFCN5VBgq.oRPr3Wm8dFRVqESvKfKR.",
+    "passwordHash": "$2a$11$92p4/5wLmxALEj19hksQS.jG.giXLQc3vhrOR8Hd1yqrjbkCAg1ey",
     "firstName": "John",
     "lastName": "Employee",
     "department": "Engineering",

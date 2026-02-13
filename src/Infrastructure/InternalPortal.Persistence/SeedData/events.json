@@ -193,5 +193,44 @@
     "minAttendees": 50, "maxAttendees": 200,
     "status": "Published",
     "recurrence": "None"
+  },
+  {
+    "title": "AI & Machine Learning Bootcamp",
+    "description": "Intensive bootcamp covering the fundamentals of machine learning, neural networks, and practical AI applications in the enterprise. Includes hands-on labs with real datasets.",
+    "categoryName": "Workshop",
+    "venueName": "Training Lab",
+    "organizerRole": "Admin",
+    "dayOffset": 77,
+    "startHour": 9, "startMinute": 0,
+    "durationHours": 4, "durationMinutes": 0,
+    "minAttendees": 8, "maxAttendees": 18,
+    "status": "Draft",
+    "recurrence": "None"
+  },
+  {
+    "title": "Annual Company Picnic",
+    "description": "A full afternoon of outdoor activities, BBQ, and team games for employees and their families. Details on location and logistics are still being finalized.",
+    "categoryName": "Social",
+    "venueName": "Main Auditorium",
+    "organizerRole": "Admin",
+    "dayOffset": 85,
+    "startHour": 12, "startMinute": 0,
+    "durationHours": 4, "durationMinutes": 0,
+    "minAttendees": 50, "maxAttendees": 200,
+    "status": "Draft",
+    "recurrence": "None"
+  },
+  {
+    "title": "Security Awareness Training",
+    "description": "Mandatory training on cybersecurity best practices including phishing prevention, password hygiene, and incident reporting. Curriculum is under final review by the security team.",
+    "categoryName": "Training",
+    "venueName": "Conference Room A",
+    "organizerRole": "Admin",
+    "dayOffset": 90,
+    "startHour": 10, "startMinute": 0,
+    "durationHours": 2, "durationMinutes": 0,
+    "minAttendees": 10, "maxAttendees": 25,
+    "status": "Draft",
+    "recurrence": "None"
   }
 ]

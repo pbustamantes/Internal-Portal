@@ -66,7 +66,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
               <Card>
                 <CardContent className="pt-6">
                   <div className="flex items-center gap-3 mb-4">
-                    <Badge status={event.status}>{event.status}</Badge>
+                    {user?.role === 'Admin' && <Badge status={event.status}>{event.status}</Badge>}
                     {event.categoryName && <span className="text-sm text-gray-500">{event.categoryName}</span>}
                   </div>
                   {event.description && <p className="text-gray-700 mb-6">{event.description}</p>}
