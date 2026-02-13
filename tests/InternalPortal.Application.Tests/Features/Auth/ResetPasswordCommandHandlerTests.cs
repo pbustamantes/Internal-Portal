@@ -1,7 +1,7 @@
-using System.Security.Cryptography;
 using Xunit;
 using FluentAssertions;
 using InternalPortal.Application.Common.Interfaces;
+using InternalPortal.Application.Common.Security;
 using InternalPortal.Application.Features.Auth.Commands;
 using InternalPortal.Domain.Entities;
 using InternalPortal.Domain.Interfaces;
@@ -18,18 +18,11 @@ public class ResetPasswordCommandHandlerTests
     private ResetPasswordCommandHandler CreateHandler() => new(
         _userRepo.Object, _identityService.Object, _unitOfWork.Object);
 
-    private static string HashToken(string token)
-    {
-        var bytes = System.Text.Encoding.UTF8.GetBytes(token);
-        var hash = SHA256.HashData(bytes);
-        return Convert.ToBase64String(hash);
-    }
-
     [Fact]
     public async Task Handle_WithValidToken_ShouldUpdatePasswordAndClearResetFields()
     {
         var rawToken = "test-token-value";
-        var hashedToken = HashToken(rawToken);
+        var hashedToken = TokenHasher.HashToken(rawToken);
 
         var user = User.Create("test@example.com", "oldHash", "John", "Doe");
         user.PasswordResetToken = hashedToken;
@@ -51,7 +44,7 @@ public class ResetPasswordCommandHandlerTests
     public async Task Handle_WithExpiredToken_ShouldThrow()
     {
         var rawToken = "test-token-value";
-        var hashedToken = HashToken(rawToken);
+        var hashedToken = TokenHasher.HashToken(rawToken);
 
         var user = User.Create("test@example.com", "oldHash", "John", "Doe");
         user.PasswordResetToken = hashedToken;
@@ -69,7 +62,7 @@ public class ResetPasswordCommandHandlerTests
     public async Task Handle_WithWrongToken_ShouldThrow()
     {
         var user = User.Create("test@example.com", "oldHash", "John", "Doe");
-        user.PasswordResetToken = HashToken("correct-token");
+        user.PasswordResetToken = TokenHasher.HashToken("correct-token");
         user.PasswordResetTokenExpiresUtc = DateTime.UtcNow.AddHours(1);
 
         _userRepo.Setup(r => r.GetByEmailAsync("test@example.com", It.IsAny<CancellationToken>())).ReturnsAsync(user);
@@ -87,6 +80,36 @@ public class ResetPasswordCommandHandlerTests
 
         var handler = CreateHandler();
         var act = () => handler.Handle(new ResetPasswordCommand("unknown@example.com", "some-token", "NewPassword123"), CancellationToken.None);
+
+        await act.Should().ThrowAsync<ApplicationException>().WithMessage("*expired*");
+    }
+
+    [Fact]
+    public async Task Handle_WithMissingResetTokenOnUser_ShouldThrow()
+    {
+        var user = User.Create("test@example.com", "oldHash", "John", "Doe");
+        // PasswordResetToken is null by default — no reset was requested
+
+        _userRepo.Setup(r => r.GetByEmailAsync("test@example.com", It.IsAny<CancellationToken>())).ReturnsAsync(user);
+
+        var handler = CreateHandler();
+        var act = () => handler.Handle(new ResetPasswordCommand("test@example.com", "some-token", "NewPassword123"), CancellationToken.None);
+
+        await act.Should().ThrowAsync<ApplicationException>().WithMessage("*expired*");
+    }
+
+    [Fact]
+    public async Task Handle_WithNullExpiry_ShouldThrow()
+    {
+        var rawToken = "test-token-value";
+        var user = User.Create("test@example.com", "oldHash", "John", "Doe");
+        user.PasswordResetToken = TokenHasher.HashToken(rawToken);
+        user.PasswordResetTokenExpiresUtc = null; // token hash matches but expiry is null
+
+        _userRepo.Setup(r => r.GetByEmailAsync("test@example.com", It.IsAny<CancellationToken>())).ReturnsAsync(user);
+
+        var handler = CreateHandler();
+        var act = () => handler.Handle(new ResetPasswordCommand("test@example.com", rawToken, "NewPassword123"), CancellationToken.None);
 
         await act.Should().ThrowAsync<ApplicationException>().WithMessage("*expired*");
     }

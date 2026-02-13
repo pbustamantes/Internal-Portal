@@ -1,5 +1,6 @@
-using System.Security.Cryptography;
 using InternalPortal.Application.Common.Interfaces;
+using InternalPortal.Application.Common.Security;
+using InternalPortal.Domain.Entities;
 using InternalPortal.Domain.Interfaces;
 using MediatR;
 
@@ -25,21 +26,10 @@ public class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordCommand,
     {
         var user = await _userRepository.GetByEmailAsync(request.Email, cancellationToken);
 
-        if (user is null)
+        if (!HasValidResetToken(user, request.Token))
             throw new ApplicationException("Invalid or expired reset token.");
 
-        if (string.IsNullOrEmpty(user.PasswordResetToken))
-            throw new ApplicationException("Invalid or expired reset token.");
-
-        var hashedToken = HashToken(request.Token);
-
-        if (user.PasswordResetToken != hashedToken)
-            throw new ApplicationException("Invalid or expired reset token.");
-
-        if (user.PasswordResetTokenExpiresUtc is null || user.PasswordResetTokenExpiresUtc < DateTime.UtcNow)
-            throw new ApplicationException("Invalid or expired reset token.");
-
-        user.PasswordHash = _identityService.HashPassword(request.NewPassword);
+        user!.PasswordHash = _identityService.HashPassword(request.NewPassword);
         user.PasswordResetToken = null;
         user.PasswordResetTokenExpiresUtc = null;
 
@@ -48,10 +38,15 @@ public class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordCommand,
         return Unit.Value;
     }
 
-    private static string HashToken(string token)
+    private static bool HasValidResetToken(User? user, string token)
     {
-        var bytes = System.Text.Encoding.UTF8.GetBytes(token);
-        var hash = SHA256.HashData(bytes);
-        return Convert.ToBase64String(hash);
+        if (user is null || string.IsNullOrEmpty(user.PasswordResetToken))
+            return false;
+
+        var hashedToken = TokenHasher.HashToken(token);
+
+        return user.PasswordResetToken == hashedToken
+            && user.PasswordResetTokenExpiresUtc is not null
+            && user.PasswordResetTokenExpiresUtc > DateTime.UtcNow;
     }
 }
