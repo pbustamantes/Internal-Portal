@@ -34,6 +34,11 @@ docker-compose.override.yml
 ## Uploads
 uploads/
 
+## Secrets
+appsettings.Development.json
+appsettings.*.local.json
+.env
+.env.*
+
 ## Misc
 *.log
-appsettings.Development.json

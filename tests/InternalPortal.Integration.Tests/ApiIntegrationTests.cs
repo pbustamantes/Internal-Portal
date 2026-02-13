@@ -23,6 +23,7 @@ public class ApiIntegrationTests : IClassFixture<ApiIntegrationTests.CustomFacto
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             builder.UseEnvironment("Testing");
+            builder.UseSetting("Jwt:Secret", "TestSecretKeyThatIsAtLeast32CharactersLong!");
             builder.ConfigureServices(services =>
             {
                 // Remove all DbContext-related registrations

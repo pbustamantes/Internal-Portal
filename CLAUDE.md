@@ -50,8 +50,8 @@ Domain (innermost) → Application → Persistence/Infrastructure → API (outer
 - **Domain** (`InternalPortal.Domain`) — Entities inheriting `BaseEntity` (Id, CreatedAtUtc, UpdatedAtUtc, DomainEvents collection), value objects (DateTimeRange, Capacity, Address), domain events inheriting `BaseDomainEvent`, custom exceptions. Uses `MediatR.Contracts` only (not full MediatR).
 - **Application** (`InternalPortal.Application`) — CQRS via MediatR. Features organized as `Features/{BoundedContext}/Commands|Queries/`. Each command/query has a handler, validator (FluentValidation), and DTOs. Pipeline behaviors: ValidationBehavior → LoggingBehavior → PerformanceBehavior → UnhandledExceptionBehavior.
 - **Persistence** (`InternalPortal.Persistence`) — EF Core `ApplicationDbContext` with Fluent API configurations in `/Configurations/`. Repository pattern with `IRepository<T>` base. `SaveChangesAsync` sets audit fields and dispatches domain events via MediatR.
-- **Infrastructure** (`InternalPortal.Infrastructure`) — JWT auth (Bearer + refresh tokens), `ICurrentUserService`, SignalR `NotificationHub` at `/hubs/notifications`, email service (MailKit SMTP). Requires `<FrameworkReference Include="Microsoft.AspNetCore.App" />`.
-- **API** (`InternalPortal.API`) — Controllers, `ExceptionHandlingMiddleware` mapping domain exceptions to HTTP status codes, Swagger. DI wired via extension methods: `AddApplication()`, `AddPersistence()`, `AddInfrastructure()`.
+- **Infrastructure** (`InternalPortal.Infrastructure`) — JWT auth (Bearer + refresh tokens) via strongly-typed `JwtOptions`, `ICurrentUserService`, SignalR `NotificationHub` at `/hubs/notifications`, email service (MailKit SMTP). Requires `<FrameworkReference Include="Microsoft.AspNetCore.App" />`.
+- **API** (`InternalPortal.API`) — Controllers, `ExceptionHandlingMiddleware` mapping domain exceptions to HTTP status codes, Swagger. DI wired via extension methods: `AddApplication()`, `AddPersistence(config)`, `AddInfrastructure(config)`.
 - **Frontend** (`internal-portal-web`) — Next.js 15 App Router, all pages `'use client'`. Axios client with JWT interceptors (`lib/api.ts`), React Query hooks in `hooks/use-*.ts`, Zustand store for real-time notification state. `NEXT_PUBLIC_API_URL` baked at build time. Path alias: `@/*` → `./src/*`.
 
 ## Key Patterns
@@ -63,6 +63,28 @@ Domain (innermost) → Application → Persistence/Infrastructure → API (outer
 - **Custom exceptions**: `NotFoundException`, `ForbiddenException`, `DomainException`, `ValidationException` — caught by `ExceptionHandlingMiddleware`
 - **CORS**: Allows `http://localhost:3000` — configured in `Program.cs`
 - **SignalR auth**: JWT passed via `?access_token=` query parameter
+
+## Secrets & Configuration
+
+No secrets are stored in committed config files. `appsettings.json` contains only placeholder/empty values for sensitive settings. Secrets must be provided via one of these methods:
+
+**Local development (recommended):**
+```bash
+cd src/Presentation/InternalPortal.API
+dotnet user-secrets init
+dotnet user-secrets set "Jwt:Secret" "YourDevSecretKeyThatIsAtLeast32CharactersLong!"
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=localhost,1433;Database=InternalPortalDb;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True"
+```
+
+**Environment variables:**
+```bash
+export Jwt__Secret="YourSecretKeyThatIsAtLeast32CharactersLong!"
+export ConnectionStrings__DefaultConnection="Server=..."
+```
+
+**Docker:** Secrets are passed via environment variables in `docker-compose.yml`. Override defaults by setting `JWT_SECRET` and `SA_PASSWORD` env vars or via a `.env` file (gitignored).
+
+The app will **fail at startup** with a clear error if `Jwt:Secret` is missing or shorter than 32 characters. JWT configuration uses a strongly-typed `JwtOptions` class (`Infrastructure/Configuration/JwtOptions.cs`) validated via `ValidateDataAnnotations()` + `ValidateOnStart()`.
 
 ## Email (Mailpit)
 

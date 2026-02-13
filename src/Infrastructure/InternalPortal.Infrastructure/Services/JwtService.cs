@@ -4,24 +4,24 @@ using System.Security.Cryptography;
 using System.Text;
 using InternalPortal.Application.Common.Interfaces;
 using InternalPortal.Domain.Entities;
-using Microsoft.Extensions.Configuration;
+using InternalPortal.Infrastructure.Configuration;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
 namespace InternalPortal.Infrastructure.Services;
 
 public class JwtService : IJwtService
 {
-    private readonly IConfiguration _configuration;
+    private readonly JwtOptions _options;
 
-    public JwtService(IConfiguration configuration)
+    public JwtService(IOptions<JwtOptions> options)
     {
-        _configuration = configuration;
+        _options = options.Value;
     }
 
     public string GenerateAccessToken(User user)
     {
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
-            _configuration["Jwt:Secret"] ?? throw new InvalidOperationException("JWT Secret not configured")));
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Secret));
 
         var claims = new[]
         {
@@ -34,12 +34,11 @@ public class JwtService : IJwtService
         };
 
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-        var expires = DateTime.UtcNow.AddHours(
-            double.TryParse(_configuration["Jwt:ExpiryHours"], out var hours) ? hours : 1);
+        var expires = DateTime.UtcNow.AddHours(_options.ExpiryHours);
 
         var token = new JwtSecurityToken(
-            issuer: _configuration["Jwt:Issuer"],
-            audience: _configuration["Jwt:Audience"],
+            issuer: _options.Issuer,
+            audience: _options.Audience,
             claims: claims,
             expires: expires,
             signingCredentials: credentials);
@@ -57,8 +56,7 @@ public class JwtService : IJwtService
 
     public bool ValidateToken(string token)
     {
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
-            _configuration["Jwt:Secret"] ?? ""));
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Secret));
 
         try
         {
@@ -67,9 +65,9 @@ public class JwtService : IJwtService
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = key,
                 ValidateIssuer = true,
-                ValidIssuer = _configuration["Jwt:Issuer"],
+                ValidIssuer = _options.Issuer,
                 ValidateAudience = true,
-                ValidAudience = _configuration["Jwt:Audience"],
+                ValidAudience = _options.Audience,
                 ValidateLifetime = true,
                 ClockSkew = TimeSpan.Zero
             }, out _);

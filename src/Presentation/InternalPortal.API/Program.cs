@@ -5,6 +5,7 @@ using InternalPortal.API.Services;
 using InternalPortal.Application;
 using InternalPortal.Application.Common.Interfaces;
 using InternalPortal.Infrastructure;
+using InternalPortal.Infrastructure.Configuration;
 using InternalPortal.Infrastructure.Hubs;
 using InternalPortal.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -17,7 +18,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add layers
 builder.Services.AddApplication();
 builder.Services.AddPersistence(builder.Configuration);
-builder.Services.AddInfrastructure();
+builder.Services.AddInfrastructure(builder.Configuration);
 
 // File storage
 builder.Services.AddScoped<IFileStorageService, FileStorageService>();
@@ -27,42 +28,51 @@ builder.Services.AddControllers();
 builder.Services.AddHttpContextAccessor();
 
 // JWT Authentication
-var jwtSecret = builder.Configuration["Jwt:Secret"] ?? "SuperSecretKeyThatIsAtLeast32CharactersLong!";
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 })
-.AddJwtBearer(options =>
-{
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
-        ValidateIssuer = true,
-        ValidIssuer = builder.Configuration["Jwt:Issuer"] ?? "InternalPortal",
-        ValidateAudience = true,
-        ValidAudience = builder.Configuration["Jwt:Audience"] ?? "InternalPortalUsers",
-        ValidateLifetime = true,
-        ClockSkew = TimeSpan.Zero,
-        NameClaimType = ClaimTypes.NameIdentifier
-    };
+.AddJwtBearer();
 
-    // Allow SignalR to receive token from query string
-    options.Events = new JwtBearerEvents
+builder.Services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
+    .Configure<IConfiguration>((options, configuration) =>
     {
-        OnMessageReceived = context =>
+        var jwtSection = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()
+            ?? throw new InvalidOperationException("JWT configuration section is missing.");
+        if (string.IsNullOrWhiteSpace(jwtSection.Secret) || jwtSection.Secret.Length < 32)
+            throw new InvalidOperationException(
+                "Jwt:Secret must be configured and at least 32 characters long. " +
+                "Set it via user-secrets, environment variables (Jwt__Secret), or a secure config provider.");
+
+        options.TokenValidationParameters = new TokenValidationParameters
         {
-            var accessToken = context.Request.Query["access_token"];
-            var path = context.HttpContext.Request.Path;
-            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSection.Secret)),
+            ValidateIssuer = true,
+            ValidIssuer = jwtSection.Issuer,
+            ValidateAudience = true,
+            ValidAudience = jwtSection.Audience,
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.Zero,
+            NameClaimType = ClaimTypes.NameIdentifier
+        };
+
+        // Allow SignalR to receive token from query string
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
             {
-                context.Token = accessToken;
+                var accessToken = context.Request.Query["access_token"];
+                var path = context.HttpContext.Request.Path;
+                if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+                {
+                    context.Token = accessToken;
+                }
+                return Task.CompletedTask;
             }
-            return Task.CompletedTask;
-        }
-    };
-});
+        };
+    });
 
 builder.Services.AddAuthorization();
 
