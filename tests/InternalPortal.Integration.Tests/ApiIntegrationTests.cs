@@ -177,6 +177,204 @@ public class ApiIntegrationTests : IClassFixture<ApiIntegrationTests.CustomFacto
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
+    // ── Profile endpoints ──
+
+    [Fact]
+    public async Task GetCurrentUser_WithAuth_ShouldReturn200WithUserData()
+    {
+        var (accessToken, _) = await RegisterAndGetTokens("getme@test.com");
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/users/me");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        var response = await _client.SendAsync(request);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var json = await response.Content.ReadAsStringAsync();
+        var doc = JsonDocument.Parse(json);
+        doc.RootElement.GetProperty("email").GetString().Should().Be("getme@test.com");
+        doc.RootElement.GetProperty("firstName").GetString().Should().Be("Test");
+        doc.RootElement.GetProperty("lastName").GetString().Should().Be("User");
+    }
+
+    [Fact]
+    public async Task GetCurrentUser_WithoutAuth_ShouldReturn401()
+    {
+        var response = await _client.GetAsync("/api/users/me");
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task UpdateProfile_WithValidData_ShouldReturn200WithUpdatedFields()
+    {
+        var (accessToken, _) = await RegisterAndGetTokens("update-profile@test.com");
+
+        using var request = new HttpRequestMessage(HttpMethod.Put, "/api/users/me");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        request.Content = new StringContent(
+            """{"firstName":"Updated","lastName":"Name","department":"Finance"}""",
+            System.Text.Encoding.UTF8, "application/json");
+
+        var response = await _client.SendAsync(request);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var json = await response.Content.ReadAsStringAsync();
+        var doc = JsonDocument.Parse(json);
+        doc.RootElement.GetProperty("firstName").GetString().Should().Be("Updated");
+        doc.RootElement.GetProperty("lastName").GetString().Should().Be("Name");
+        doc.RootElement.GetProperty("department").GetString().Should().Be("Finance");
+    }
+
+    [Fact]
+    public async Task UpdateProfile_ShouldPersistChanges()
+    {
+        var (accessToken, _) = await RegisterAndGetTokens("update-persist@test.com");
+
+        // Update
+        using var updateRequest = new HttpRequestMessage(HttpMethod.Put, "/api/users/me");
+        updateRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        updateRequest.Content = new StringContent(
+            """{"firstName":"Persisted","lastName":"Change","department":"Legal"}""",
+            System.Text.Encoding.UTF8, "application/json");
+        var updateResponse = await _client.SendAsync(updateRequest);
+        updateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // Verify via GET
+        using var getRequest = new HttpRequestMessage(HttpMethod.Get, "/api/users/me");
+        getRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        var getResponse = await _client.SendAsync(getRequest);
+        var json = await getResponse.Content.ReadAsStringAsync();
+        var doc = JsonDocument.Parse(json);
+        doc.RootElement.GetProperty("firstName").GetString().Should().Be("Persisted");
+        doc.RootElement.GetProperty("lastName").GetString().Should().Be("Change");
+        doc.RootElement.GetProperty("department").GetString().Should().Be("Legal");
+    }
+
+    [Fact]
+    public async Task UpdateProfile_WithoutAuth_ShouldReturn401()
+    {
+        var response = await _client.PutAsync("/api/users/me",
+            new StringContent("""{"firstName":"A","lastName":"B"}""",
+                System.Text.Encoding.UTF8, "application/json"));
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task UploadProfilePicture_WithInvalidExtension_ShouldReturn400()
+    {
+        var (accessToken, _) = await RegisterAndGetTokens("bad-ext@test.com");
+
+        var formContent = new MultipartFormDataContent();
+        var fileContent = new ByteArrayContent(new byte[] { 1, 2, 3 });
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+        formContent.Add(fileContent, "file", "malware.exe");
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/users/me/profile-picture");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        request.Content = formContent;
+
+        var response = await _client.SendAsync(request);
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task UploadProfilePicture_WithoutAuth_ShouldReturn401()
+    {
+        var formContent = new MultipartFormDataContent();
+        var fileContent = new ByteArrayContent(new byte[] { 1 });
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue("image/png");
+        formContent.Add(fileContent, "file", "test.png");
+
+        var response = await _client.PostAsync("/api/users/me/profile-picture", formContent);
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task DeleteProfilePicture_AfterUpload_ShouldClearUrl()
+    {
+        var (accessToken, _) = await RegisterAndGetTokens("delete-pic@test.com");
+
+        // Upload a picture first
+        var pngBytes = new byte[]
+        {
+            0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D,
+            0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+            0x08, 0x02, 0x00, 0x00, 0x00, 0x90, 0x77, 0x53, 0xDE, 0x00, 0x00, 0x00,
+            0x0C, 0x49, 0x44, 0x41, 0x54, 0x08, 0xD7, 0x63, 0xF8, 0xCF, 0xC0, 0x00,
+            0x00, 0x00, 0x02, 0x00, 0x01, 0xE2, 0x21, 0xBC, 0x33, 0x00, 0x00, 0x00,
+            0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82
+        };
+        var formContent = new MultipartFormDataContent();
+        var fileContent = new ByteArrayContent(pngBytes);
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue("image/png");
+        formContent.Add(fileContent, "file", "test.png");
+
+        using var uploadRequest = new HttpRequestMessage(HttpMethod.Post, "/api/users/me/profile-picture");
+        uploadRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        uploadRequest.Content = formContent;
+        var uploadResponse = await _client.SendAsync(uploadRequest);
+        uploadResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // Verify picture URL was set
+        var uploadJson = await uploadResponse.Content.ReadAsStringAsync();
+        var uploadDoc = JsonDocument.Parse(uploadJson);
+        uploadDoc.RootElement.GetProperty("profilePictureUrl").GetString().Should().NotBeNullOrEmpty();
+
+        // Delete the picture
+        using var deleteRequest = new HttpRequestMessage(HttpMethod.Delete, "/api/users/me/profile-picture");
+        deleteRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        var deleteResponse = await _client.SendAsync(deleteRequest);
+        deleteResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var deleteJson = await deleteResponse.Content.ReadAsStringAsync();
+        var deleteDoc = JsonDocument.Parse(deleteJson);
+        deleteDoc.RootElement.GetProperty("profilePictureUrl").ValueKind.Should().Be(JsonValueKind.Null);
+    }
+
+    [Fact]
+    public async Task DeleteProfilePicture_WithNoPicture_ShouldReturn200WithNullUrl()
+    {
+        var (accessToken, _) = await RegisterAndGetTokens("no-pic-delete@test.com");
+
+        using var request = new HttpRequestMessage(HttpMethod.Delete, "/api/users/me/profile-picture");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        var response = await _client.SendAsync(request);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var json = await response.Content.ReadAsStringAsync();
+        var doc = JsonDocument.Parse(json);
+        doc.RootElement.GetProperty("profilePictureUrl").ValueKind.Should().Be(JsonValueKind.Null);
+    }
+
+    [Fact]
+    public async Task DeleteProfilePicture_WithoutAuth_ShouldReturn401()
+    {
+        var response = await _client.DeleteAsync("/api/users/me/profile-picture");
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task GetMyEvents_WithoutAuth_ShouldReturn401()
+    {
+        var response = await _client.GetAsync("/api/users/me/events");
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task GetMyEvents_WithAuth_ShouldReturn200()
+    {
+        var (accessToken, _) = await RegisterAndGetTokens("my-events@test.com");
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/users/me/events");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        var response = await _client.SendAsync(request);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    // ── Auth endpoints ──
+
     [Fact]
     public async Task ForgotPassword_WithValidEmail_ShouldReturn200()
     {

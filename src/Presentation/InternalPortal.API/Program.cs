@@ -1,7 +1,9 @@
 using System.Security.Claims;
 using System.Text;
 using InternalPortal.API.Middleware;
+using InternalPortal.API.Services;
 using InternalPortal.Application;
+using InternalPortal.Application.Common.Interfaces;
 using InternalPortal.Infrastructure;
 using InternalPortal.Infrastructure.Hubs;
 using InternalPortal.Persistence;
@@ -16,6 +18,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddApplication();
 builder.Services.AddPersistence(builder.Configuration);
 builder.Services.AddInfrastructure();
+
+// File storage
+builder.Services.AddScoped<IFileStorageService, FileStorageService>();
 
 // Controllers
 builder.Services.AddControllers();
