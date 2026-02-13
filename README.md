@@ -83,7 +83,21 @@ This starts a SQL Server 2022 container on port `1433` with:
 - **SA Password:** `YourStrong@Passw0rd`
 - **Database:** `InternalPortalDb` (created automatically on first run)
 
-#### 2. Run Database Migrations
+#### 2. Configure Secrets
+
+The app requires a JWT secret (32+ characters) and a valid connection string. Use .NET user-secrets to store these outside source control:
+
+```bash
+cd src/Presentation/InternalPortal.API
+dotnet user-secrets init
+dotnet user-secrets set "Jwt:Secret" "YourDevSecretKeyThatIsAtLeast32CharactersLong!"
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" \
+  "Server=localhost,1433;Database=InternalPortalDb;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True"
+```
+
+> **Note:** The app will fail at startup with a clear error if `Jwt:Secret` is missing or shorter than 32 characters. User secrets are stored in `~/.microsoft/usersecrets/` (macOS/Linux) or `%APPDATA%\Microsoft\UserSecrets\` (Windows) and are never committed to source control.
+
+#### 3. Run Database Migrations
 
 ```bash
 # Create the migration (already included in the repo under Persistence/Migrations)
@@ -100,9 +114,9 @@ dotnet ef database update \
 
 This creates the following tables: `Users`, `Events`, `Registrations`, `Notifications`, `RefreshTokens`, `EventCategories`, and `Venues`.
 
-> **Note:** If you skip this step, the API will automatically run migrations and seed data on first launch in Development mode (see step 3).
+> **Note:** If you skip this step, the API will automatically run migrations and seed data on first launch in Development mode (see step 4).
 
-#### 3. Run the Backend API
+#### 4. Run the Backend API
 
 ```bash
 dotnet run --project src/Presentation/InternalPortal.API
@@ -112,7 +126,7 @@ The API starts on `http://localhost:5001` (or the default Kestrel ports).
 
 **Swagger UI:** [http://localhost:5001/swagger](http://localhost:5001/swagger)
 
-#### 4. Run the Frontend
+#### 5. Run the Frontend
 
 ```bash
 cd src/Frontend/internal-portal-web
@@ -296,10 +310,10 @@ Key settings in `src/Presentation/InternalPortal.API/appsettings.json`:
 ```json
 {
   "ConnectionStrings": {
-    "DefaultConnection": "Server=localhost,1433;Database=InternalPortalDb;..."
+    "DefaultConnection": "Server=localhost,1433;Database=InternalPortalDb;User Id=sa;Password=REPLACE_ME;TrustServerCertificate=True"
   },
   "Jwt": {
-    "Secret": "SuperSecretKeyThatIsAtLeast32CharactersLong!",
+    "Secret": "",
     "Issuer": "InternalPortal",
     "Audience": "InternalPortalUsers",
     "ExpiryHours": 1
@@ -311,6 +325,8 @@ Key settings in `src/Presentation/InternalPortal.API/appsettings.json`:
   }
 }
 ```
+
+> **Important:** `Jwt:Secret` and the connection string password are intentionally empty/placeholder. You must provide real values via [user-secrets](#option-b-local-development) (local dev), environment variables, or Docker Compose (which sets them automatically).
 
 The frontend API URL defaults to `http://localhost:5001` and can be overridden with the `NEXT_PUBLIC_API_URL` environment variable.
 

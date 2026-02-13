@@ -6,6 +6,7 @@
 - [Environment Variables](#environment-variables)
 - [Docker Compose (Development)](#docker-compose-development)
 - [Docker Production Deployment](#docker-production-deployment)
+- [Local Development (without Docker)](#local-development-without-docker)
 - [Manual Deployment](#manual-deployment)
 - [Database](#database)
 - [Frontend Deployment](#frontend-deployment)
@@ -194,6 +195,57 @@ The Next.js config already sets `output: "standalone"` for optimized Docker buil
 cd src/Frontend/internal-portal-web
 docker build -t internal-portal-web:latest .
 docker run -d --name internal-portal-web -p 3000:3000 internal-portal-web:latest
+```
+
+---
+
+## Local Development (without Docker)
+
+For local development without Docker Compose, use **.NET user-secrets** to store sensitive configuration securely outside source control.
+
+### 1. Initialize User Secrets
+
+```bash
+cd src/Presentation/InternalPortal.API
+dotnet user-secrets init
+```
+
+### 2. Set Required Secrets
+
+```bash
+dotnet user-secrets set "Jwt:Secret" "YourDevSecretKeyThatIsAtLeast32CharactersLong!"
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" \
+  "Server=localhost,1433;Database=InternalPortalDb;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True"
+```
+
+### 3. (Optional) Set SMTP Settings
+
+If running Mailpit separately (`docker compose up -d mailpit`):
+
+```bash
+dotnet user-secrets set "Smtp:Host" "localhost"
+dotnet user-secrets set "Smtp:Port" "1025"
+```
+
+### 4. Start the Database and Run
+
+```bash
+# Start only SQL Server from Docker Compose
+docker compose up -d sqlserver
+
+# Run the API (from repo root)
+dotnet run --project src/Presentation/InternalPortal.API
+```
+
+> **Note:** User secrets are stored in `~/.microsoft/usersecrets/` (macOS/Linux) or `%APPDATA%\Microsoft\UserSecrets\` (Windows) and are never committed to source control. The app will fail at startup with a clear error if `Jwt:Secret` is missing or shorter than 32 characters.
+
+### Listing and Removing Secrets
+
+```bash
+cd src/Presentation/InternalPortal.API
+dotnet user-secrets list     # View all stored secrets
+dotnet user-secrets remove "Jwt:Secret"  # Remove a specific secret
+dotnet user-secrets clear    # Remove all secrets
 ```
 
 ---
