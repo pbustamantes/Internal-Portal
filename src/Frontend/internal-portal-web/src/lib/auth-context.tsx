@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
 import api from '@/lib/api';
+import { getAccessToken, setAccessToken } from '@/lib/token-store';
 import { queryClient } from '@/lib/query-provider';
 import { useNotificationStore } from '@/lib/notification-store';
 import type { User, AuthResponse } from '@/types';
@@ -24,13 +25,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loadUser = useCallback(async () => {
     try {
-      const token = localStorage.getItem('accessToken');
-      if (!token) { setIsLoading(false); return; }
+      // Try to refresh the session via cookie — this recovers the access token
+      // after a page reload since the in-memory token is lost
+      const { data: refreshData } = await api.post<AuthResponse>('/auth/refresh', {});
+      setAccessToken(refreshData.accessToken);
+
       const { data } = await api.get<User>('/users/me');
       setUser(data);
     } catch {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
+      setAccessToken(null);
     } finally {
       setIsLoading(false);
     }
@@ -47,25 +50,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     const { data } = await api.post<AuthResponse>('/auth/login', { email, password });
-    localStorage.setItem('accessToken', data.accessToken);
-    localStorage.setItem('refreshToken', data.refreshToken);
+    setAccessToken(data.accessToken);
     setUser(data.user);
   };
 
   const register = async (email: string, password: string, firstName: string, lastName: string, department?: string) => {
     const { data } = await api.post<AuthResponse>('/auth/register', { email, password, firstName, lastName, department });
-    localStorage.setItem('accessToken', data.accessToken);
-    localStorage.setItem('refreshToken', data.refreshToken);
+    setAccessToken(data.accessToken);
     setUser(data.user);
   };
 
   const logout = async () => {
     try {
-      const refreshToken = localStorage.getItem('refreshToken');
-      if (refreshToken) await api.post('/auth/revoke', { refreshToken });
+      await api.post('/auth/logout');
     } finally {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
+      setAccessToken(null);
       setUser(null);
       queryClient.clear();
       useNotificationStore.getState().clearStore();

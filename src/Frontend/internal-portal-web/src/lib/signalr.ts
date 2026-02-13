@@ -1,4 +1,5 @@
 import * as signalR from '@microsoft/signalr';
+import { getAccessToken } from '@/lib/token-store';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 
@@ -8,7 +9,7 @@ export function getConnection(): signalR.HubConnection {
   if (!connection) {
     connection = new signalR.HubConnectionBuilder()
       .withUrl(`${API_BASE_URL}/hubs/notifications`, {
-        accessTokenFactory: () => localStorage.getItem('accessToken') || '',
+        accessTokenFactory: () => getAccessToken() || '',
       })
       .withAutomaticReconnect()
       .configureLogging(signalR.LogLevel.Information)

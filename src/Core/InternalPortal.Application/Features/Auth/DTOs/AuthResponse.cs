@@ -1,8 +1,10 @@
+using System.Text.Json.Serialization;
+
 namespace InternalPortal.Application.Features.Auth.DTOs;
 
 public record AuthResponse(
     string AccessToken,
-    string RefreshToken,
+    [property: JsonIgnore] string RefreshToken,
     DateTime ExpiresAt,
     UserDto User);
 
